@@ -87,6 +87,17 @@ export function canPlaceAs(item: MenuItem, orderType: 'spot' | 'preorder'): { ok
   return { ok: true }
 }
 
+/** Can this item be added to cart as a spot order right now? */
+export function canOrderAsSpot(item: MenuItem): boolean {
+  return item.order_type === 'spot' || item.order_type === 'both'
+}
+
+/** Can this item be added to cart as a pre-order right now (i.e. inside an active window)? */
+export function canOrderAsPreorder(item: MenuItem): boolean {
+  if (item.order_type === 'spot') return false
+  return activeWindow(item.preorder_windows ?? []) !== null
+}
+
 /**
  * Label shown under a closed preorder item on the store page.
  * Only relevant for pure 'preorder' items (both items are always addable for spot).

@@ -10,8 +10,6 @@ import { canPlaceAs } from '@/lib/preorder'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { ArrowLeft, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react'
 import Link from 'next/link'
@@ -20,13 +18,12 @@ export default function CartPage() {
   const router = useRouter()
   const [supabase] = useState(() => createClient())
   const [cart, setCart] = useState<Cart | null>(null)
-  const [orderType, setOrderType] = useState<'spot' | 'preorder'>('spot')
   const [placing, setPlacing] = useState(false)
 
   useEffect(() => { setCart(getCart()) }, [])
 
-  function handleQtyChange(itemId: string, qty: number) {
-    const updated = updateQuantity(itemId, qty)
+  function handleQtyChange(itemId: string, orderType: 'spot' | 'preorder', qty: number) {
+    const updated = updateQuantity(itemId, orderType, qty)
     setCart(updated)
   }
 
@@ -35,10 +32,17 @@ export default function CartPage() {
     setPlacing(true)
 
     try {
-      // Validate each item against the selected order type
+      const spotItems = cart.items.filter(i => i.cartOrderType === 'spot')
+      const preItems = cart.items.filter(i => i.cartOrderType === 'preorder')
+
+      // Validate all items against their respective order types
       const errors: string[] = []
-      for (const { item } of cart.items) {
-        const check = canPlaceAs(item, orderType)
+      for (const { item } of spotItems) {
+        const check = canPlaceAs(item, 'spot')
+        if (!check.ok) errors.push(check.reason!)
+      }
+      for (const { item } of preItems) {
+        const check = canPlaceAs(item, 'preorder')
         if (!check.ok) errors.push(check.reason!)
       }
       if (errors.length > 0) {
@@ -60,44 +64,43 @@ export default function CartPage() {
         return
       }
 
-      const total = cartTotal(cart)
+      const createdOrderIds: string[] = []
 
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          store_id: cart.store_id,
-          buyer_id: profile.id,
-          status: 'created',
-          order_type: orderType,
-          total,
-        })
-        .select('id')
-        .single()
-
-      if (orderError || !order) {
-        toast.error('Failed to place order')
-        return
+      if (spotItems.length > 0) {
+        const spotTotal = spotItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0)
+        const { data: order, error } = await supabase
+          .from('orders')
+          .insert({ store_id: cart.store_id, buyer_id: profile.id, status: 'created', order_type: 'spot', total: spotTotal })
+          .select('id')
+          .single()
+        if (error || !order) { toast.error('Failed to place spot order'); return }
+        await supabase.from('order_items').insert(
+          spotItems.map(({ item, quantity }) => ({
+            order_id: order.id, item_id: item.id, title: item.title, quantity, price: item.price,
+          }))
+        )
+        createdOrderIds.push(order.id)
       }
 
-      // Insert order items
-      const orderItems = cart.items.map(i => ({
-        order_id: order.id,
-        item_id: i.item.id,
-        title: i.item.title,
-        quantity: i.quantity,
-        price: i.item.price,
-      }))
-
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
-      if (itemsError) {
-        toast.error('Failed to save order items')
-        return
+      if (preItems.length > 0) {
+        const preTotal = preItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0)
+        const { data: order, error } = await supabase
+          .from('orders')
+          .insert({ store_id: cart.store_id, buyer_id: profile.id, status: 'created', order_type: 'preorder', total: preTotal })
+          .select('id')
+          .single()
+        if (error || !order) { toast.error('Failed to place pre-order'); return }
+        await supabase.from('order_items').insert(
+          preItems.map(({ item, quantity }) => ({
+            order_id: order.id, item_id: item.id, title: item.title, quantity, price: item.price,
+          }))
+        )
+        createdOrderIds.push(order.id)
       }
 
       clearCart()
-      toast.success('Order placed!')
-      router.push(`/orders/${order.id}`)
+      toast.success(createdOrderIds.length > 1 ? 'Orders placed!' : 'Order placed!')
+      router.push(createdOrderIds.length === 1 ? `/orders/${createdOrderIds[0]}` : '/orders')
     } finally {
       setPlacing(false)
     }
@@ -114,6 +117,13 @@ export default function CartPage() {
   )
 
   const total = cartTotal(cart)
+  const spotItems = cart.items.filter(i => i.cartOrderType === 'spot')
+  const preItems = cart.items.filter(i => i.cartOrderType === 'preorder')
+  const hasMixed = spotItems.length > 0 && preItems.length > 0
+
+  const placeLabel = hasMixed
+    ? `Place 2 Orders · ₹${total.toFixed(2)}`
+    : `Place Order · ₹${total.toFixed(2)}`
 
   return (
     <div className="p-4 pb-32">
@@ -125,38 +135,34 @@ export default function CartPage() {
         <Badge variant="secondary" className="ml-auto">{cart.store_name}</Badge>
       </div>
 
-      {/* Order type */}
-      <div className="bg-white rounded-2xl border p-4 mb-4">
-        <Label className="text-sm font-semibold mb-2 block">Order Type</Label>
-        <Select value={orderType} onValueChange={v => setOrderType(v as 'spot' | 'preorder')}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="spot">🔴 Spot Order — order now, get it soon</SelectItem>
-            <SelectItem value="preorder">📅 Pre-order — schedule for later</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Cart items */}
       <div className="bg-white rounded-2xl border divide-y mb-4">
-        {cart.items.map(({ item, quantity }) => (
-          <div key={item.id} className="flex items-center gap-3 p-3">
+        {cart.items.map(({ item, quantity, cartOrderType }) => (
+          <div key={`${item.id}::${cartOrderType}`} className="flex items-center gap-3 p-3">
             {item.image_url && (
               <img src={item.image_url} alt={item.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm">{item.title}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-medium text-sm">{item.title}</p>
+                <Badge
+                  variant="secondary"
+                  className={cartOrderType === 'spot'
+                    ? 'text-xs bg-orange-50 text-orange-700 border-orange-200'
+                    : 'text-xs bg-blue-50 text-blue-700 border-blue-200'}
+                >
+                  {cartOrderType === 'spot' ? 'Spot Order' : 'Pre Order'}
+                </Badge>
+              </div>
               <p className="text-sm text-orange-600 font-semibold">₹{(item.price * quantity).toFixed(2)}</p>
               <p className="text-xs text-muted-foreground">₹{item.price} × {quantity}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button onClick={() => handleQtyChange(item.id, quantity - 1)} className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
+              <button onClick={() => handleQtyChange(item.id, cartOrderType, quantity - 1)} className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
                 {quantity === 1 ? <Trash2 className="w-3 h-3 text-orange-600" /> : <Minus className="w-3 h-3 text-orange-600" />}
               </button>
               <span className="text-sm font-semibold w-4 text-center">{quantity}</span>
-              <button onClick={() => handleQtyChange(item.id, quantity + 1)} className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center">
+              <button onClick={() => handleQtyChange(item.id, cartOrderType, quantity + 1)} className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center">
                 <Plus className="w-3 h-3 text-white" />
               </button>
             </div>
@@ -168,12 +174,32 @@ export default function CartPage() {
       <div className="bg-white rounded-2xl border p-4 space-y-2 mb-4">
         <p className="font-semibold text-sm">Bill Summary</p>
         <Separator />
-        {cart.items.map(({ item, quantity }) => (
-          <div key={item.id} className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{item.title} × {quantity}</span>
-            <span>₹{(item.price * quantity).toFixed(2)}</span>
-          </div>
-        ))}
+        {hasMixed ? (
+          <>
+            <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Spot Orders</p>
+            {spotItems.map(({ item, quantity }) => (
+              <div key={`spot-${item.id}`} className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{item.title} × {quantity}</span>
+                <span>₹{(item.price * quantity).toFixed(2)}</span>
+              </div>
+            ))}
+            <Separator />
+            <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Pre Orders</p>
+            {preItems.map(({ item, quantity }) => (
+              <div key={`pre-${item.id}`} className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{item.title} × {quantity}</span>
+                <span>₹{(item.price * quantity).toFixed(2)}</span>
+              </div>
+            ))}
+          </>
+        ) : (
+          cart.items.map(({ item, quantity, cartOrderType }) => (
+            <div key={`${item.id}::${cartOrderType}`} className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{item.title} × {quantity}</span>
+              <span>₹{(item.price * quantity).toFixed(2)}</span>
+            </div>
+          ))
+        )}
         <Separator />
         <div className="flex justify-between font-bold">
           <span>Total</span>
@@ -189,7 +215,7 @@ export default function CartPage() {
             onClick={placeOrder}
             disabled={placing}
           >
-            {placing ? 'Placing order…' : `Place Order · ₹${total.toFixed(2)}`}
+            {placing ? 'Placing order…' : placeLabel}
           </Button>
         </div>
       </div>
