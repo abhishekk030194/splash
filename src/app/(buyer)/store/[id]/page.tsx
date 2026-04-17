@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { addToCart, updateQuantity, getCart, cartCount, Cart } from '@/lib/cart'
-import { isOrderable, nextWindowLabel } from '@/lib/preorder'
+import { canOrderAsSpot, canOrderAsPreorder, nextWindowLabel } from '@/lib/preorder'
 import { Store, MenuItem, ItemGroup } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,29 +41,23 @@ export default function StorePage() {
     setLoading(false)
   }
 
-  function getQuantity(itemId: string) {
-    return cart?.items.find(i => i.item.id === itemId)?.quantity || 0
+  function getQuantity(itemId: string, orderType: 'spot' | 'preorder') {
+    return cart?.items.find(i => i.item.id === itemId && i.cartOrderType === orderType)?.quantity || 0
   }
 
-  function handleAdd(item: MenuItem) {
+  function handleAdd(item: MenuItem, orderType: 'spot' | 'preorder') {
     if (!store) return
-    if (!isOrderable(item)) {
-      const label = nextWindowLabel(item)
-      toast.error(label ?? 'Ordering is closed for this item')
-      return
-    }
-    // Warn if adding from different store
     const existing = getCart()
     if (existing && existing.store_id !== store.id) {
       if (!confirm(`Your cart has items from ${existing.store_name}. Start a new cart from ${store.name}?`)) return
     }
-    const updated = addToCart(item, store.id, store.name)
+    const updated = addToCart(item, store.id, store.name, orderType)
     setCart(updated)
-    toast.success(`${item.title} added`)
+    toast.success(`${item.title} added as ${orderType === 'spot' ? 'Spot Order' : 'Pre Order'}`)
   }
 
-  function handleQtyChange(itemId: string, qty: number) {
-    const updated = updateQuantity(itemId, qty)
+  function handleQtyChange(itemId: string, orderType: 'spot' | 'preorder', qty: number) {
+    const updated = updateQuantity(itemId, orderType, qty)
     setCart(updated)
   }
 
@@ -113,16 +107,20 @@ export default function StorePage() {
       </div>
 
       <div className="px-4 space-y-6">
-        {/* Ungrouped items */}
         {ungrouped.length > 0 && (
           <div className="space-y-2">
             {ungrouped.map(item => (
-              <ItemRow key={item.id} item={item} quantity={getQuantity(item.id)} onAdd={() => handleAdd(item)} onQtyChange={handleQtyChange} />
+              <ItemRow
+                key={item.id}
+                item={item}
+                getQuantity={getQuantity}
+                onAdd={orderType => handleAdd(item, orderType)}
+                onQtyChange={handleQtyChange}
+              />
             ))}
           </div>
         )}
 
-        {/* Grouped items */}
         {groups.map(group => {
           const groupItems = items.filter(i => i.group_id === group.id)
           if (groupItems.length === 0) return null
@@ -131,7 +129,13 @@ export default function StorePage() {
               <h2 className="font-semibold text-sm uppercase tracking-wide text-orange-700 mb-2">{group.name}</h2>
               <div className="space-y-2">
                 {groupItems.map(item => (
-                  <ItemRow key={item.id} item={item} quantity={getQuantity(item.id)} onAdd={() => handleAdd(item)} onQtyChange={handleQtyChange} />
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    getQuantity={getQuantity}
+                    onAdd={orderType => handleAdd(item, orderType)}
+                    onQtyChange={handleQtyChange}
+                  />
                 ))}
               </div>
             </div>
@@ -139,7 +143,6 @@ export default function StorePage() {
         })}
       </div>
 
-      {/* Cart bar */}
       {cartItemCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-20">
           <div className="max-w-2xl mx-auto">
@@ -156,55 +159,116 @@ export default function StorePage() {
   )
 }
 
-function ItemRow({ item, quantity, onAdd, onQtyChange }: {
+function OrderTypeTag({ spotAvail, preAvail }: { spotAvail: boolean; preAvail: boolean }) {
+  if (spotAvail && preAvail) {
+    return (
+      <Badge variant="secondary" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+        Spot &amp; Pre Order
+      </Badge>
+    )
+  }
+  if (spotAvail) {
+    return (
+      <Badge variant="secondary" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+        Spot Order
+      </Badge>
+    )
+  }
+  if (preAvail) {
+    return (
+      <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+        Pre Order
+      </Badge>
+    )
+  }
+  return null
+}
+
+
+function ItemRow({ item, getQuantity, onAdd, onQtyChange }: {
   item: MenuItem
-  quantity: number
-  onAdd: () => void
-  onQtyChange: (id: string, qty: number) => void
+  getQuantity: (itemId: string, orderType: 'spot' | 'preorder') => number
+  onAdd: (orderType: 'spot' | 'preorder') => void
+  onQtyChange: (id: string, orderType: 'spot' | 'preorder', qty: number) => void
 }) {
-  const orderable = isOrderable(item)
-  const closedLabel = !orderable ? nextWindowLabel(item) : null
+  const spotAvail = canOrderAsSpot(item)
+  const preAvail = canOrderAsPreorder(item)
+  const neitherAvail = !spotAvail && !preAvail
+  const closedLabel = neitherAvail ? nextWindowLabel(item) : null
+
+  const spotQty = getQuantity(item.id, 'spot')
+  const preQty = getQuantity(item.id, 'preorder')
 
   return (
-    <div className={`bg-white rounded-2xl border p-3 flex items-center gap-3 ${!orderable ? 'opacity-60' : ''}`}>
+    <div className={`bg-white rounded-2xl border p-3 flex items-start gap-3 ${neitherAvail ? 'opacity-60' : ''}`}>
       {item.image_url && (
-        <img src={item.image_url} alt={item.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+        <img src={item.image_url} alt={item.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0 mt-0.5" />
       )}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <p className="font-medium text-sm">{item.title}</p>
           {item.is_combo && <Badge variant="secondary" className="text-xs">Combo</Badge>}
-          {item.order_type === 'preorder' && (
-            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">Pre-order</Badge>
-          )}
         </div>
         {item.subtitle && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.subtitle}</p>}
         <p className="text-sm font-semibold text-orange-600 mt-1">₹{item.price}</p>
-        {closedLabel && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-            <Clock className="w-3 h-3" />{closedLabel}
-          </p>
-        )}
+        <div className="mt-1">
+          <OrderTypeTag spotAvail={spotAvail} preAvail={preAvail} />
+          {closedLabel && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Clock className="w-3 h-3" />{closedLabel}
+            </p>
+          )}
+        </div>
       </div>
-      <div className="flex-shrink-0">
-        {!orderable ? (
-          <Button size="sm" variant="outline" className="border-gray-300 text-gray-400 cursor-not-allowed" disabled>
+
+      <div className="flex-shrink-0 flex flex-col gap-2 items-end pt-0.5">
+        {neitherAvail ? (
+          <Button size="sm" variant="outline" className="border-gray-300 text-gray-400 cursor-not-allowed h-7 px-3 text-xs" disabled>
             Closed
           </Button>
-        ) : quantity === 0 ? (
-          <Button size="sm" variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50" onClick={onAdd}>
-            Add
-          </Button>
         ) : (
-          <div className="flex items-center gap-2">
-            <button onClick={() => onQtyChange(item.id, quantity - 1)} className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
-              <Minus className="w-3 h-3 text-orange-600" />
-            </button>
-            <span className="text-sm font-semibold w-4 text-center">{quantity}</span>
-            <button onClick={() => onQtyChange(item.id, quantity + 1)} className="w-7 h-7 rounded-full bg-orange-500 flex items-center justify-center">
-              <Plus className="w-3 h-3 text-white" />
-            </button>
-          </div>
+          <>
+            {spotAvail && (
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="text-xs font-medium text-orange-600">Spot</span>
+                {spotQty === 0 ? (
+                  <Button size="sm" variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50 h-7 px-3 text-xs" onClick={() => onAdd('spot')}>
+                    Add
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => onQtyChange(item.id, 'spot', spotQty - 1)} className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
+                      <Minus className="w-3 h-3 text-orange-600" />
+                    </button>
+                    <span className="text-sm font-semibold w-4 text-center">{spotQty}</span>
+                    <button onClick={() => onQtyChange(item.id, 'spot', spotQty + 1)} className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
+                      <Plus className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {preAvail && (
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="text-xs font-medium text-blue-600">Pre Order</span>
+                {preQty === 0 ? (
+                  <Button size="sm" variant="outline" className="border-blue-400 text-blue-600 hover:bg-blue-50 h-7 px-3 text-xs" onClick={() => onAdd('preorder')}>
+                    Add
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => onQtyChange(item.id, 'preorder', preQty - 1)} className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                      <Minus className="w-3 h-3 text-blue-600" />
+                    </button>
+                    <span className="text-sm font-semibold w-4 text-center">{preQty}</span>
+                    <button onClick={() => onQtyChange(item.id, 'preorder', preQty + 1)} className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Plus className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
