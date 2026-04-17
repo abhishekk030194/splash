@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { uploadImage, generateImagePath } from '@/lib/supabase/storage'
-import { MenuItem, ItemGroup } from '@/types'
+import { MenuItem, ItemGroup, PreorderWindow } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Clock, Layers, Camera } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, Clock, Layers, Camera, X } from 'lucide-react'
 
 export default function SellerListingsPage() {
   const [supabase] = useState(() => createClient())
@@ -36,6 +36,7 @@ export default function SellerListingsPage() {
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [preorderWindows, setPreorderWindows] = useState<PreorderWindow[]>([])
 
   // Group dialog state
   const [groupDialog, setGroupDialog] = useState(false)
@@ -49,7 +50,7 @@ export default function SellerListingsPage() {
     if (!user) { window.location.href = '/login'; return }
 
     const { data: profile } = await supabase.from('users').select('id').eq('auth_id', user.id).single()
-    if (!profile) return
+    if (!profile) { window.location.href = '/seller/onboarding'; return }
 
     const { data: store } = await supabase.from('stores').select('id').eq('owner_id', profile.id).single()
     if (!store) { window.location.href = '/seller/onboarding'; return }
@@ -76,10 +77,11 @@ export default function SellerListingsPage() {
     setItemForm({
       title: '', subtitle: '', price: 0, is_available: true,
       order_type: 'both', group_id: groupId || null, is_combo: false,
-      available_from: null, available_until: null, image_url: null,
+      available_from: null, available_until: null, delivery_time: null, image_url: null,
     })
     setImageFile(null)
     setImagePreview(null)
+    setPreorderWindows([])
     setItemDialog(true)
   }
 
@@ -88,7 +90,20 @@ export default function SellerListingsPage() {
     setItemForm({ ...item })
     setImageFile(null)
     setImagePreview(item.image_url)
+    setPreorderWindows(item.preorder_windows || [])
     setItemDialog(true)
+  }
+
+  function addPreorderWindow() {
+    setPreorderWindows(w => [...w, { order_open: '', order_close: '', delivery_time: '' }])
+  }
+
+  function updatePreorderWindow(idx: number, field: keyof PreorderWindow, value: string) {
+    setPreorderWindows(w => w.map((win, i) => i === idx ? { ...win, [field]: value } : win))
+  }
+
+  function removePreorderWindow(idx: number) {
+    setPreorderWindows(w => w.filter((_, i) => i !== idx))
   }
 
   function handleItemImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -122,6 +137,8 @@ export default function SellerListingsPage() {
       is_combo: itemForm.is_combo || false,
       available_from: itemForm.available_from || null,
       available_until: itemForm.available_until || null,
+      delivery_time: null,
+      preorder_windows: preorderWindows.filter(w => w.order_open && w.order_close && w.delivery_time),
       image_url: imageUrl,
     }
 
@@ -370,19 +387,71 @@ export default function SellerListingsPage() {
               </Select>
             </div>
             <Separator />
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2"><Clock className="w-4 h-4" /> Availability Window (optional)</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs text-muted-foreground">From</Label>
-                  <Input type="time" value={itemForm.available_from || ''} onChange={e => setItemForm(f => ({ ...f, available_from: e.target.value || null }))} />
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Until</Label>
-                  <Input type="time" value={itemForm.available_until || ''} onChange={e => setItemForm(f => ({ ...f, available_until: e.target.value || null }))} />
+
+            {/* Spot order timing */}
+            {(itemForm.order_type === 'spot' || itemForm.order_type === 'both') && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><Clock className="w-4 h-4" /> Spot Order Window</Label>
+                <p className="text-xs text-muted-foreground">When customers can see and order this item for immediate delivery.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Available from</Label>
+                    <Input type="time" value={itemForm.available_from || ''} onChange={e => setItemForm(f => ({ ...f, available_from: e.target.value || null }))} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Available until</Label>
+                    <Input type="time" value={itemForm.available_until || ''} onChange={e => setItemForm(f => ({ ...f, available_until: e.target.value || null }))} />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Pre-order windows */}
+            {(itemForm.order_type === 'preorder' || itemForm.order_type === 'both') && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2"><Clock className="w-4 h-4" /> Pre-order Windows</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addPreorderWindow}>
+                    <Plus className="w-3 h-3 mr-1" /> Add Window
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Each window defines when customers can order and when they'll receive it.</p>
+
+                {preorderWindows.length === 0 && (
+                  <div className="text-center py-4 border-2 border-dashed rounded-xl text-sm text-muted-foreground">
+                    No windows yet. Click "Add Window" to create one.
+                  </div>
+                )}
+
+                {preorderWindows.map((win, idx) => (
+                  <div key={idx} className="border rounded-xl p-3 space-y-2 bg-orange-50/50">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-orange-700">Window {idx + 1}</span>
+                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePreorderWindow(idx)}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Ordering slot — customers can order between:</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Opens at</Label>
+                          <Input type="time" value={win.order_open} onChange={e => updatePreorderWindow(idx, 'order_open', e.target.value)} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Closes at</Label>
+                          <Input type="time" value={win.order_close} onChange={e => updatePreorderWindow(idx, 'order_close', e.target.value)} />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Delivery time</Label>
+                      <Input type="time" value={win.delivery_time} onChange={e => updatePreorderWindow(idx, 'delivery_time', e.target.value)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
             <Separator />
             <div className="flex items-center justify-between">
               <div>
@@ -448,7 +517,14 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
           )}
         </div>
         {item.subtitle && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</p>}
-        <p className="text-sm font-semibold text-orange-600 mt-1">₹{item.price}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-sm font-semibold text-orange-600">₹{item.price}</p>
+          {item.preorder_windows?.length > 0 && (
+            <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+              <Clock className="w-3 h-3" /> {item.preorder_windows.length} pre-order {item.preorder_windows.length === 1 ? 'window' : 'windows'}
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <Switch checked={item.is_available} onCheckedChange={() => onToggle(item.id, item.is_available)} />

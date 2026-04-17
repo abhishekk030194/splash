@@ -54,7 +54,15 @@ export interface MenuItem {
   available_until: string | null
   is_combo: boolean
   combo_items: ComboItem[] | null
+  delivery_time: string | null
+  preorder_windows: PreorderWindow[]
   created_at: string
+}
+
+export interface PreorderWindow {
+  order_open: string   // e.g. "18:00"
+  order_close: string  // e.g. "21:00"
+  delivery_time: string // e.g. "08:00"
 }
 
 export interface ComboItem {

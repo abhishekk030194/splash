@@ -30,37 +30,33 @@ export default function SellerOnboardingPage() {
 
   async function handleSubmit() {
     if (!name.trim()) { toast.error('Kitchen name is required'); return }
-
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/login'; return }
 
-      // Get or create user profile
-      let { data: profile } = await supabase
+      // Upsert user profile
+      const { data: profile, error: profileError } = await supabase
         .from('users')
+        .upsert({
+          auth_id: user.id,
+          name: user.user_metadata?.full_name || user.email || 'Seller',
+          phone: user.phone || null,
+          role: 'seller',
+        }, { onConflict: 'auth_id' })
         .select('id')
-        .eq('auth_id', user.id)
         .single()
 
-      if (!profile) {
-        const { data: newProfile, error } = await supabase
-          .from('users')
-          .insert({ auth_id: user.id, name: 'Seller', phone: user.phone ?? '', role: 'seller' })
-          .select('id')
-          .single()
-        if (error) { toast.error('Failed to create profile'); return }
-        profile = newProfile
+      if (profileError || !profile) {
+        toast.error('Failed to create profile')
+        return
       }
 
-      // Upload image if provided
       let imageUrl: string | null = null
       if (imageFile) {
         imageUrl = await uploadImage(imageFile, 'store-images', generateImagePath('stores', imageFile.name))
-        if (!imageUrl) { toast.error('Image upload failed — store will be created without image'); }
       }
 
-      // Create store
       const { error } = await supabase.from('stores').insert({
         owner_id: profile.id,
         name: name.trim(),
@@ -69,9 +65,8 @@ export default function SellerOnboardingPage() {
         is_active: true,
       })
 
-      if (error) { toast.error('Failed to create store'); return }
-
-      toast.success('Kitchen created! Setting up your menu…')
+      if (error) { toast.error('Failed to create store: ' + error.message); return }
+      toast.success('Kitchen created!')
       window.location.href = '/seller/listings'
     } finally {
       setLoading(false)
@@ -87,8 +82,6 @@ export default function SellerOnboardingPage() {
           <CardDescription>Tell customers about your home kitchen</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-
-          {/* Store image */}
           <div className="flex flex-col items-center gap-2">
             <label htmlFor="store-img" className="cursor-pointer">
               <div className={`w-24 h-24 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors ${imagePreview ? 'border-orange-300' : 'border-gray-300 hover:border-orange-400'}`}>
@@ -104,28 +97,15 @@ export default function SellerOnboardingPage() {
 
           <div className="space-y-1">
             <Label>Kitchen Name <span className="text-destructive">*</span></Label>
-            <Input
-              placeholder="e.g. Anita's Kitchen, Sharma Home Foods"
-              value={name}
-              onChange={e => setName(e.target.value)}
-            />
+            <Input placeholder="e.g. Anita's Kitchen" value={name} onChange={e => setName(e.target.value)} />
           </div>
 
           <div className="space-y-1">
             <Label>About your kitchen</Label>
-            <Textarea
-              placeholder="What do you cook? Any specialty? e.g. Authentic Rajasthani home food, made fresh every morning"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={3}
-            />
+            <Textarea placeholder="What do you cook? Any specialty?" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
           </div>
 
-          <Button
-            className="w-full bg-orange-500 hover:bg-orange-600"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
+          <Button className="w-full bg-orange-500 hover:bg-orange-600" onClick={handleSubmit} disabled={loading}>
             {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating…</> : 'Create My Kitchen →'}
           </Button>
         </CardContent>

@@ -42,7 +42,7 @@ export default function SellerAccountPage() {
     if (!user) { window.location.href = '/login'; return }
 
     const { data: profile } = await supabase.from('users').select('id').eq('auth_id', user.id).single()
-    if (!profile) return
+    if (!profile) { window.location.href = '/seller/onboarding'; return }
 
     const { data: s } = await supabase.from('stores').select('*').eq('owner_id', profile.id).single()
     if (!s) { window.location.href = '/seller/onboarding'; return }
