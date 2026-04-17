@@ -199,7 +199,7 @@ export default function OrderTrackerPage() {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Placed at</span>
-          <span>{new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>{new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Order ID</span>

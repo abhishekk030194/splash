@@ -218,7 +218,7 @@ export default function SellerOrdersPage() {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     #{order.id.slice(0, 8).toUpperCase()}
                     {' · '}
-                    {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                     {' · '}
                     <span className="capitalize">{order.order_type}</span>
                   </p>

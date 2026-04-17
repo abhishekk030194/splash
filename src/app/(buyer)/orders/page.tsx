@@ -120,7 +120,7 @@ function OrderCard({ order }: { order: OrderWithStore }) {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
             {' · '}
             <span className="capitalize">{order.order_type}</span>
           </p>
