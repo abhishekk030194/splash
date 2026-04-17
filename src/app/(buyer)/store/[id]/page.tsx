@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { addToCart, updateQuantity, getCart, cartCount, Cart } from '@/lib/cart'
+import { isOrderable, nextWindowLabel } from '@/lib/preorder'
 import { Store, MenuItem, ItemGroup } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -46,6 +47,11 @@ export default function StorePage() {
 
   function handleAdd(item: MenuItem) {
     if (!store) return
+    if (!isOrderable(item)) {
+      const label = nextWindowLabel(item)
+      toast.error(label ?? 'Ordering is closed for this item')
+      return
+    }
     // Warn if adding from different store
     const existing = getCart()
     if (existing && existing.store_id !== store.id) {
@@ -156,8 +162,11 @@ function ItemRow({ item, quantity, onAdd, onQtyChange }: {
   onAdd: () => void
   onQtyChange: (id: string, qty: number) => void
 }) {
+  const orderable = isOrderable(item)
+  const closedLabel = !orderable ? nextWindowLabel(item) : null
+
   return (
-    <div className="bg-white rounded-2xl border p-3 flex items-center gap-3">
+    <div className={`bg-white rounded-2xl border p-3 flex items-center gap-3 ${!orderable ? 'opacity-60' : ''}`}>
       {item.image_url && (
         <img src={item.image_url} alt={item.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
       )}
@@ -165,12 +174,24 @@ function ItemRow({ item, quantity, onAdd, onQtyChange }: {
         <div className="flex items-center gap-2">
           <p className="font-medium text-sm">{item.title}</p>
           {item.is_combo && <Badge variant="secondary" className="text-xs">Combo</Badge>}
+          {item.order_type === 'preorder' && (
+            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">Pre-order</Badge>
+          )}
         </div>
         {item.subtitle && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.subtitle}</p>}
         <p className="text-sm font-semibold text-orange-600 mt-1">₹{item.price}</p>
+        {closedLabel && (
+          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Clock className="w-3 h-3" />{closedLabel}
+          </p>
+        )}
       </div>
       <div className="flex-shrink-0">
-        {quantity === 0 ? (
+        {!orderable ? (
+          <Button size="sm" variant="outline" className="border-gray-300 text-gray-400 cursor-not-allowed" disabled>
+            Closed
+          </Button>
+        ) : quantity === 0 ? (
           <Button size="sm" variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50" onClick={onAdd}>
             Add
           </Button>

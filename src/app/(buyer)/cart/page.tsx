@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getCart, updateQuantity, clearCart, cartTotal, Cart } from '@/lib/cart'
+import { isOrderable, nextWindowLabel } from '@/lib/preorder'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -34,6 +35,14 @@ export default function CartPage() {
     setPlacing(true)
 
     try {
+      // Validate preorder windows before placing
+      const closedItems = cart.items.filter(({ item }) => !isOrderable(item))
+      if (closedItems.length > 0) {
+        const names = closedItems.map(({ item }) => `${item.title} (${nextWindowLabel(item) ?? 'closed'})`).join(', ')
+        toast.error(`Ordering window closed for: ${names}`)
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
