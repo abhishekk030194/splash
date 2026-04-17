@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getCart, updateQuantity, clearCart, cartTotal, Cart } from '@/lib/cart'
-import { isOrderable, nextWindowLabel } from '@/lib/preorder'
+import { canPlaceAs } from '@/lib/preorder'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -35,11 +35,14 @@ export default function CartPage() {
     setPlacing(true)
 
     try {
-      // Validate preorder windows before placing
-      const closedItems = cart.items.filter(({ item }) => !isOrderable(item))
-      if (closedItems.length > 0) {
-        const names = closedItems.map(({ item }) => `${item.title} (${nextWindowLabel(item) ?? 'closed'})`).join(', ')
-        toast.error(`Ordering window closed for: ${names}`)
+      // Validate each item against the selected order type
+      const errors: string[] = []
+      for (const { item } of cart.items) {
+        const check = canPlaceAs(item, orderType)
+        if (!check.ok) errors.push(check.reason!)
+      }
+      if (errors.length > 0) {
+        toast.error(errors[0], { description: errors.length > 1 ? `+${errors.length - 1} more item(s)` : undefined })
         return
       }
 
