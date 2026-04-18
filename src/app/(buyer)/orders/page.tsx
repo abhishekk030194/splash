@@ -5,10 +5,11 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Order, OrderStatus } from '@/types'
+import { Order, OrderItem, OrderStatus } from '@/types'
 import { orderColor, orderRef } from '@/lib/order-color'
 import { ShoppingBag, ChevronRight, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
 
 const STATUS_BADGE: Record<OrderStatus, { label: string; className: string }> = {
@@ -25,6 +26,7 @@ const STATUS_BADGE: Record<OrderStatus, { label: string; className: string }> = 
 
 interface OrderWithStore extends Order {
   store_name?: string
+  items: OrderItem[]
 }
 
 export default function OrdersPage() {
@@ -54,10 +56,23 @@ export default function OrdersPage() {
       .order('created_at', { ascending: false })
 
     if (data) {
+      const orderIds = data.map((o: any) => o.id)
+      const { data: allItems } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds)
+
+      const itemsByOrder: Record<string, OrderItem[]> = {}
+      for (const item of allItems || []) {
+        if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = []
+        itemsByOrder[item.order_id].push(item)
+      }
+
       setOrders(data.map((o: any) => ({
         ...o,
         store_name: o.store?.name,
         store: undefined,
+        items: itemsByOrder[o.id] || [],
       })))
     }
     setLoading(false)
@@ -65,7 +80,7 @@ export default function OrdersPage() {
 
   if (loading) return (
     <div className="p-4 space-y-3">
-      {[1,2,3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse" />)}
+      {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />)}
     </div>
   )
 
@@ -90,7 +105,7 @@ export default function OrdersPage() {
       {active.length > 0 && (
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 mb-2">Active</p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {active.map(order => <OrderCard key={order.id} order={order} />)}
           </div>
         </div>
@@ -99,7 +114,7 @@ export default function OrdersPage() {
       {past.length > 0 && (
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Past Orders</p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {past.map(order => <OrderCard key={order.id} order={order} />)}
           </div>
         </div>
@@ -113,34 +128,65 @@ function OrderCard({ order }: { order: OrderWithStore }) {
   const color = orderColor(order.order_type)
   return (
     <Link href={`/orders/${order.id}`}>
-      <div className="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:shadow-sm transition-shadow"
+      <div className="bg-white rounded-2xl border p-4 hover:shadow-sm transition-shadow"
            style={{ borderLeftWidth: 4, borderLeftColor: color.border }}>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <p className="font-semibold text-sm">{order.store_name}</p>
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
-              {badge.label}
-            </span>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-sm">{order.store_name}</p>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
+                {badge.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded"
+                    style={{ backgroundColor: color.bg, color: color.text }}>
+                {orderRef(order.id)}
+              </span>
+              <span className="text-xs text-muted-foreground capitalize">{order.order_type}</span>
+              <span className="text-xs text-muted-foreground">
+                {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}
+              </span>
+            </div>
+            {order.delivery_time && (
+              <p className="text-xs font-medium mt-1 flex items-center gap-1" style={{ color: color.text }}>
+                <Clock className="w-3 h-3" />
+                Deliver by {order.delivery_time.slice(0, 5)}
+              </p>
+            )}
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded"
-                  style={{ backgroundColor: color.bg, color: color.text }}>
-              {orderRef(order.id)}
-            </span>
-            <span className="text-xs text-muted-foreground capitalize">{order.order_type}</span>
-          </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
-          </p>
-          {order.delivery_time && (
-            <p className="text-xs font-medium mt-1 flex items-center gap-1" style={{ color: color.text }}>
-              <Clock className="w-3 h-3" />
-              Deliver by {order.delivery_time.slice(0, 5)}
-            </p>
-          )}
-          <p className="text-sm font-semibold text-orange-600 mt-1">₹{order.total.toFixed(2)}</p>
+          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+
+        {/* Items */}
+        {order.items.length > 0 && (
+          <>
+            <Separator className="my-2" />
+            <div className="space-y-1">
+              {order.items.map(item => (
+                <div key={item.id}>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{item.title} × {item.quantity}</span>
+                    <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono mt-0.5">
+                    <span>Order: {orderRef(order.id)}</span>
+                    <span>·</span>
+                    <span>Item: #{item.id.replace(/-/g, '').slice(0, 8).toUpperCase()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Separator className="my-2" />
+          </>
+        )}
+
+        {/* Total */}
+        <div className="flex justify-between items-center">
+          <span className="text-xs text-muted-foreground">Total</span>
+          <span className="text-sm font-bold text-orange-600">₹{order.total.toFixed(2)}</span>
+        </div>
       </div>
     </Link>
   )
