@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Order, OrderStatus } from '@/types'
 import { orderColor, orderRef } from '@/lib/order-color'
-import { ShoppingBag, ChevronRight } from 'lucide-react'
+import { ShoppingBag, ChevronRight, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -132,6 +132,12 @@ function OrderCard({ order }: { order: OrderWithStore }) {
           <p className="text-xs text-muted-foreground mt-0.5">
             {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
           </p>
+          {order.delivery_time && (
+            <p className="text-xs font-medium mt-1 flex items-center gap-1" style={{ color: color.text }}>
+              <Clock className="w-3 h-3" />
+              Deliver by {order.delivery_time.slice(0, 5)}
+            </p>
+          )}
           <p className="text-sm font-semibold text-orange-600 mt-1">₹{order.total.toFixed(2)}</p>
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
