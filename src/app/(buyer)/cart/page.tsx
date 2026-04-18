@@ -68,7 +68,7 @@ export default function CartPage() {
 
       if (spotItems.length > 0) {
         const spotTotal = spotItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0)
-        const autoCancelAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+        const autoCancelAt = new Date(Date.now() + 1 * 60 * 1000).toISOString()
         const { data: order, error } = await supabase
           .from('orders')
           .insert({ store_id: cart.store_id, buyer_id: profile.id, status: 'created', order_type: 'spot', total: spotTotal, auto_cancel_at: autoCancelAt })
