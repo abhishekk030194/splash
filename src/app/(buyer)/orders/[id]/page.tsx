@@ -185,13 +185,25 @@ export default function OrderTrackerPage() {
       )}
 
       {/* Order items */}
-      <div className="bg-white rounded-2xl border p-4 space-y-2 mb-4">
-        <p className="font-semibold text-sm">Order Items</p>
+      <div className="bg-white rounded-2xl border p-4 space-y-3 mb-4">
+        <div className="flex items-center justify-between">
+          <p className="font-semibold text-sm">Order Items</p>
+          <span className="text-xs font-mono text-muted-foreground">
+            Order: {orderRef(order.id)}
+          </span>
+        </div>
         <Separator />
         {items.map(item => (
-          <div key={item.id} className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{item.title} × {item.quantity}</span>
-            <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+          <div key={item.id} className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="font-medium">{item.title} × {item.quantity}</span>
+              <span className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+              <span>Order ID: {orderRef(order.id)}</span>
+              <span>·</span>
+              <span>Item ID: #{item.id.replace(/-/g, '').slice(0, 8).toUpperCase()}</span>
+            </div>
           </div>
         ))}
         <Separator />

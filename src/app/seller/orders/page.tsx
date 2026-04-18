@@ -240,11 +240,18 @@ export default function SellerOrdersPage() {
         )}
 
         {/* Items */}
-        <div className="space-y-1">
+        <div className="space-y-2">
           {order.items.map(item => (
-            <div key={item.id} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{item.title} × {item.quantity}</span>
-              <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+            <div key={item.id}>
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">{item.title} × {item.quantity}</span>
+                <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono mt-0.5">
+                <span>Order: {orderRef(order.id)}</span>
+                <span>·</span>
+                <span>Item: #{item.id.replace(/-/g, '').slice(0, 8).toUpperCase()}</span>
+              </div>
             </div>
           ))}
         </div>
