@@ -123,9 +123,17 @@ export default function OrdersPage() {
   )
 }
 
+function expectedByTime(createdAt: string, etaMinutes: number): string {
+  const placed = new Date(createdAt)
+  const expected = new Date(placed.getTime() + etaMinutes * 60 * 1000)
+  return expected.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
+}
+
 function OrderCard({ order }: { order: OrderWithStore }) {
   const badge = STATUS_BADGE[order.status]
   const color = orderColor(order.order_type)
+  const showEta = order.eta_minutes && order.order_type === 'spot' &&
+    ['accepted', 'dispatched'].includes(order.status)
   return (
     <Link href={`/orders/${order.id}`}>
       <div className="bg-white rounded-2xl border p-4 hover:shadow-sm transition-shadow"
@@ -154,6 +162,15 @@ function OrderCard({ order }: { order: OrderWithStore }) {
                 <Clock className="w-3 h-3" />
                 Deliver by {order.delivery_time.slice(0, 5)}
               </p>
+            )}
+            {showEta && (
+              <div className="mt-2 bg-orange-50 border border-orange-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                <p className="text-xs text-orange-700 font-medium">
+                  Expect order in <span className="font-bold">{order.eta_minutes} min</span>
+                  {' · '}by <span className="font-bold">{expectedByTime(order.created_at, order.eta_minutes!)}</span>
+                </p>
+              </div>
             )}
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
