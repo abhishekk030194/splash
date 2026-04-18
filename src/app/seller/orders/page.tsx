@@ -202,7 +202,8 @@ export default function SellerOrdersPage() {
     )] as string[]
 
     return (
-      <div key={order.id} className={`bg-white rounded-2xl border border-l-4 ${orderColor(order.id).border} p-4 space-y-3`}>
+      <div key={order.id} className="bg-white rounded-2xl border p-4 space-y-3"
+           style={{ borderLeftWidth: 4, borderLeftColor: orderColor(order.id).border }}>
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -213,7 +214,8 @@ export default function SellerOrdersPage() {
               </span>
             </div>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${orderColor(order.id).bg} ${orderColor(order.id).text}`}>
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded"
+                    style={{ backgroundColor: orderColor(order.id).bg, color: orderColor(order.id).text }}>
                 {orderRef(order.id)}
               </span>
               <span className="text-xs text-muted-foreground">

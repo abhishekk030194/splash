@@ -113,7 +113,8 @@ function OrderCard({ order }: { order: OrderWithStore }) {
   const color = orderColor(order.id)
   return (
     <Link href={`/orders/${order.id}`}>
-      <div className={`bg-white rounded-2xl border border-l-4 ${color.border} p-4 flex items-center gap-3 hover:shadow-sm transition-shadow`}>
+      <div className="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:shadow-sm transition-shadow"
+           style={{ borderLeftWidth: 4, borderLeftColor: color.border }}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <p className="font-semibold text-sm">{order.store_name}</p>
@@ -122,7 +123,8 @@ function OrderCard({ order }: { order: OrderWithStore }) {
             </span>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${color.bg} ${color.text}`}>
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded"
+                  style={{ backgroundColor: color.bg, color: color.text }}>
               {orderRef(order.id)}
             </span>
             <span className="text-xs text-muted-foreground capitalize">{order.order_type}</span>

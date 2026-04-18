@@ -109,7 +109,8 @@ export default function OrderTrackerPage() {
   return (
     <div className="p-4 pb-10">
       {/* Header with color accent bar */}
-      <div className={`rounded-2xl border border-l-4 ${color.border} p-4 mb-5 bg-white`}>
+      <div className="rounded-2xl border p-4 mb-5 bg-white"
+           style={{ borderLeftWidth: 4, borderLeftColor: color.border }}>
         <div className="flex items-center gap-3">
           <button onClick={() => router.push('/orders')} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
             <ArrowLeft className="w-4 h-4" />
@@ -117,7 +118,8 @@ export default function OrderTrackerPage() {
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold leading-tight">Order from {storeName}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${color.bg} ${color.text}`}>
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded"
+                    style={{ backgroundColor: color.bg, color: color.text }}>
                 {orderRef(order.id)}
               </span>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
