@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Order, OrderItem, OrderStatus } from '@/types'
+import { orderColor, orderRef } from '@/lib/order-color'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -201,7 +202,7 @@ export default function SellerOrdersPage() {
     )] as string[]
 
     return (
-      <div key={order.id} className={`bg-white rounded-2xl border p-4 space-y-3 ${isPreorder ? 'border-blue-200' : ''}`}>
+      <div key={order.id} className={`bg-white rounded-2xl border border-l-4 ${orderColor(order.id).border} p-4 space-y-3`}>
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
@@ -211,11 +212,14 @@ export default function SellerOrdersPage() {
                 {badge.label}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              #{order.id.slice(0, 8).toUpperCase()}
-              {' · '}
-              {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
-            </p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${orderColor(order.id).bg} ${orderColor(order.id).text}`}>
+                {orderRef(order.id)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
+              </span>
+            </div>
           </div>
           <p className="text-sm font-bold text-orange-600">₹{order.total.toFixed(2)}</p>
         </div>

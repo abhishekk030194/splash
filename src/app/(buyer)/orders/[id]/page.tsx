@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Order, OrderItem, OrderStatus } from '@/types'
+import { orderColor, orderRef } from '@/lib/order-color'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -98,6 +99,7 @@ export default function OrderTrackerPage() {
 
   const isCancelled = CANCELLED_STATUSES.includes(order.status)
   const badge = STATUS_BADGE[order.status]
+  const color = orderColor(order.id)
 
   // Find current step index for progress
   const currentStepIndex = isCancelled
@@ -106,17 +108,24 @@ export default function OrderTrackerPage() {
 
   return (
     <div className="p-4 pb-10">
-      <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => router.push('/orders')} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div>
-          <h1 className="text-base font-bold leading-tight">Order from {storeName}</h1>
-          <p className="text-xs text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</p>
+      {/* Header with color accent bar */}
+      <div className={`rounded-2xl border border-l-4 ${color.border} p-4 mb-5 bg-white`}>
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.push('/orders')} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-bold leading-tight">Order from {storeName}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${color.bg} ${color.text}`}>
+                {orderRef(order.id)}
+              </span>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
+                {badge.label}
+              </span>
+            </div>
+          </div>
         </div>
-        <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full ${badge.className}`}>
-          {badge.label}
-        </span>
       </div>
 
       {/* ETA */}

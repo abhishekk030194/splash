@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Order, OrderStatus } from '@/types'
+import { orderColor, orderRef } from '@/lib/order-color'
 import { ShoppingBag, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -109,20 +110,25 @@ export default function OrdersPage() {
 
 function OrderCard({ order }: { order: OrderWithStore }) {
   const badge = STATUS_BADGE[order.status]
+  const color = orderColor(order.id)
   return (
     <Link href={`/orders/${order.id}`}>
-      <div className="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-orange-200 transition-colors">
+      <div className={`bg-white rounded-2xl border border-l-4 ${color.border} p-4 flex items-center gap-3 hover:shadow-sm transition-shadow`}>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <p className="font-semibold text-sm">{order.store_name}</p>
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
               {badge.label}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${color.bg} ${color.text}`}>
+              {orderRef(order.id)}
+            </span>
+            <span className="text-xs text-muted-foreground capitalize">{order.order_type}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
-            {' · '}
-            <span className="capitalize">{order.order_type}</span>
           </p>
           <p className="text-sm font-semibold text-orange-600 mt-1">₹{order.total.toFixed(2)}</p>
         </div>
