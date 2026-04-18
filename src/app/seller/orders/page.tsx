@@ -195,11 +195,7 @@ export default function SellerOrdersPage() {
     const actions = NEXT_ACTIONS[order.status] || []
     const isUpdating = updating[order.id]
     const isPreorder = order.order_type === 'preorder'
-
-    // Collect unique delivery times across this order's items
-    const deliveryTimes = [...new Set(
-      order.items.map(i => resolveDeliveryTime(menuItemsById[i.item_id], order.created_at)).filter(Boolean)
-    )] as string[]
+    const deliveryTime = (order as any).delivery_time as string | null
 
     return (
       <div key={order.id} className="bg-white rounded-2xl border p-4 space-y-3"
@@ -227,14 +223,12 @@ export default function SellerOrdersPage() {
         </div>
 
         {/* Delivery time banner for pre-orders */}
-        {isPreorder && deliveryTimes.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 flex items-start gap-2">
-            <Clock className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+        {isPreorder && deliveryTime && (
+          <div className="bg-pink-50 border border-pink-200 rounded-xl px-3 py-2 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-pink-600 flex-shrink-0" />
             <div>
-              <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide mb-0.5">Delivery Time</p>
-              {deliveryTimes.map(t => (
-                <p key={t} className="text-sm font-bold text-blue-700">{fmtTime(t)}</p>
-              ))}
+              <p className="text-xs font-semibold text-pink-800 uppercase tracking-wide">Deliver by</p>
+              <p className="text-sm font-bold text-pink-700">{fmtTime(deliveryTime)}</p>
             </div>
           </div>
         )}

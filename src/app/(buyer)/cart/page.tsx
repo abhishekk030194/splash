@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getCart, updateQuantity, clearCart, cartTotal, Cart } from '@/lib/cart'
-import { canPlaceAs } from '@/lib/preorder'
+import { canPlaceAs, activeWindow } from '@/lib/preorder'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -83,19 +83,39 @@ export default function CartPage() {
       }
 
       if (preItems.length > 0) {
-        const preTotal = preItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0)
-        const { data: order, error } = await supabase
-          .from('orders')
-          .insert({ store_id: cart.store_id, buyer_id: profile.id, status: 'created', order_type: 'preorder', total: preTotal })
-          .select('id')
-          .single()
-        if (error || !order) { toast.error('Failed to place pre-order'); return }
-        await supabase.from('order_items').insert(
-          preItems.map(({ item, quantity }) => ({
-            order_id: order.id, item_id: item.id, title: item.title, quantity, price: item.price,
-          }))
-        )
-        createdOrderIds.push(order.id)
+        // Group pre-order items by their active window's delivery_time
+        // Items with the same delivery time → one order
+        // Items with different delivery times → separate orders
+        const byDeliveryTime = new Map<string, typeof preItems>()
+        for (const cartItem of preItems) {
+          const win = activeWindow(cartItem.item.preorder_windows ?? [])
+          const deliveryTime = win?.delivery_time ?? cartItem.item.delivery_time ?? 'unscheduled'
+          if (!byDeliveryTime.has(deliveryTime)) byDeliveryTime.set(deliveryTime, [])
+          byDeliveryTime.get(deliveryTime)!.push(cartItem)
+        }
+
+        for (const [deliveryTime, groupItems] of byDeliveryTime) {
+          const groupTotal = groupItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0)
+          const { data: order, error } = await supabase
+            .from('orders')
+            .insert({
+              store_id: cart.store_id,
+              buyer_id: profile.id,
+              status: 'created',
+              order_type: 'preorder',
+              total: groupTotal,
+              delivery_time: deliveryTime === 'unscheduled' ? null : deliveryTime,
+            })
+            .select('id')
+            .single()
+          if (error || !order) { toast.error('Failed to place pre-order'); return }
+          await supabase.from('order_items').insert(
+            groupItems.map(({ item, quantity }) => ({
+              order_id: order.id, item_id: item.id, title: item.title, quantity, price: item.price,
+            }))
+          )
+          createdOrderIds.push(order.id)
+        }
       }
 
       clearCart()
