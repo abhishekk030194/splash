@@ -208,7 +208,7 @@ export default function CartPage() {
       </div>
 
       {/* Place order */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-20">
         <div className="max-w-2xl mx-auto">
           <Button
             className="w-full bg-orange-500 hover:bg-orange-600 h-12 text-base"
