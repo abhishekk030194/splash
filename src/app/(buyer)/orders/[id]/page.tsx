@@ -131,17 +131,17 @@ export default function OrderTrackerPage() {
       </div>
 
       {/* Delivery time for preorders */}
-      {(order as any).delivery_time && !isCancelled && (
+      {order.delivery_time && !isCancelled && (
         <div className="bg-pink-50 border border-pink-100 rounded-2xl p-3 flex items-center gap-2 mb-4">
           <Clock className="w-4 h-4 text-pink-500 flex-shrink-0" />
           <p className="text-sm font-medium text-pink-700">
-            Scheduled delivery at <span className="font-bold">{(order as any).delivery_time.slice(0, 5)}</span>
+            Scheduled delivery at <span className="font-bold">{order.delivery_time.slice(0, 5)}</span>
           </p>
         </div>
       )}
 
       {/* ETA for spot orders */}
-      {order.eta_minutes && !(order as any).delivery_time && !isCancelled && (
+      {order.eta_minutes && !order.delivery_time && !isCancelled && (
         <div className="bg-orange-50 border border-orange-100 rounded-2xl p-3 flex items-center gap-2 mb-4">
           <Clock className="w-4 h-4 text-orange-500 flex-shrink-0" />
           <p className="text-sm font-medium text-orange-700">

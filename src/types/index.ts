@@ -79,6 +79,7 @@ export interface Order {
   order_type: OrderType
   total: number
   eta_minutes: number | null
+  delivery_time: string | null
   created_at: string
   store?: Store
   buyer?: User

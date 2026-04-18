@@ -195,7 +195,7 @@ export default function SellerOrdersPage() {
     const actions = NEXT_ACTIONS[order.status] || []
     const isUpdating = updating[order.id]
     const isPreorder = order.order_type === 'preorder'
-    const deliveryTime = (order as any).delivery_time as string | null
+    const deliveryTime = order.delivery_time
 
     return (
       <div key={order.id} className="bg-white rounded-2xl border p-4 space-y-3"
