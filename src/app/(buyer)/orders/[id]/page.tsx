@@ -10,12 +10,14 @@ import { orderColor, orderRef } from '@/lib/order-color'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { toast } from 'sonner'
 import { ArrowLeft, Clock, CheckCircle2, Circle, XCircle } from 'lucide-react'
 
 function cancellationMessage(status: OrderStatus, reason: string | null): string {
+  if (reason === 'buyer_cancelled')       return 'You cancelled this order.'
   if (reason === 'stock_unavailable')     return 'Kitchen rejected: item(s) not in stock.'
   if (reason === 'delivery_not_possible') return 'Kitchen rejected: delivery not possible right now.'
-  if (reason === 'auto_timeout')          return 'Order auto-cancelled: kitchen did not respond in time.'
+  if (reason === 'auto_timeout')          return 'Auto-cancelled: kitchen did not respond in time.'
   if (status === 'rejected')              return 'The kitchen could not accept this order.'
   return 'This order was cancelled.'
 }
@@ -67,6 +69,17 @@ export default function OrderTrackerPage() {
 
     return () => { supabase.removeChannel(channel) }
   }, [id])
+
+  async function cancelOrder() {
+    if (!confirm('Cancel this order?')) return
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'cancelled', cancellation_reason: 'buyer_cancelled' })
+      .eq('id', id)
+      .eq('status', 'created') // safety: only cancel if still pending
+    if (error) toast.error('Could not cancel order')
+    else toast.success('Order cancelled')
+  }
 
   async function loadOrder() {
     const { data: o } = await supabase
@@ -247,6 +260,17 @@ export default function OrderTrackerPage() {
           <span className="font-mono text-xs">#{order.id.slice(0, 8).toUpperCase()}</span>
         </div>
       </div>
+
+      {/* Cancel button — only while pending */}
+      {order.status === 'created' && (
+        <Button
+          variant="outline"
+          className="w-full border-red-200 text-red-600 hover:bg-red-50"
+          onClick={cancelOrder}
+        >
+          Cancel Order
+        </Button>
+      )}
     </div>
   )
 }

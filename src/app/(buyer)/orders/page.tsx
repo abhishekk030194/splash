@@ -131,6 +131,7 @@ function expectedByTime(createdAt: string, etaMinutes: number): string {
 
 function cancellationMessage(status: string, reason: string | null): string | null {
   if (!['rejected', 'cancelled'].includes(status)) return null
+  if (reason === 'buyer_cancelled')       return 'Cancelled by you'
   if (reason === 'stock_unavailable')     return 'Item(s) not in stock'
   if (reason === 'delivery_not_possible') return 'Delivery not possible'
   if (reason === 'auto_timeout')          return 'Auto-cancelled: no response in time'
