@@ -29,6 +29,7 @@ export default function SellerAccountPage() {
   const [isActive, setIsActive] = useState(true)
   const [openFrom, setOpenFrom] = useState('')
   const [openUntil, setOpenUntil] = useState('')
+  const [defaultEta, setDefaultEta] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
 
@@ -53,6 +54,7 @@ export default function SellerAccountPage() {
     setIsActive(s.is_active)
     setOpenFrom((s as any).open_from || '')
     setOpenUntil((s as any).open_until || '')
+    setDefaultEta((s as any).default_eta_minutes?.toString() || '')
     setImagePreview(s.image_url)
     setLoading(false)
   }
@@ -83,6 +85,7 @@ export default function SellerAccountPage() {
       image_url: imageUrl,
       open_from: openFrom || null,
       open_until: openUntil || null,
+      default_eta_minutes: defaultEta ? parseInt(defaultEta) : null,
     } as any).eq('id', store.id)
 
     setSaving(false)
@@ -207,6 +210,27 @@ export default function SellerAccountPage() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">Leave blank to accept orders anytime kitchen is open.</p>
+          </div>
+
+          <Separator />
+
+          {/* Default ETA */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Clock className="w-4 h-4" /> Default Delivery ETA
+            </Label>
+            <p className="text-xs text-muted-foreground">How many minutes after order placement should customers expect their spot order?</p>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min={1}
+                placeholder="e.g. 30"
+                className="w-28"
+                value={defaultEta}
+                onChange={e => setDefaultEta(e.target.value)}
+              />
+              <span className="text-sm text-muted-foreground">minutes</span>
+            </div>
           </div>
 
           <Button className="w-full bg-orange-500 hover:bg-orange-600" onClick={saveSettings} disabled={saving}>

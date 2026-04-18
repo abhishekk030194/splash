@@ -8,10 +8,10 @@ import { createClient } from '@/lib/supabase/client'
 import { Order, OrderItem, OrderStatus } from '@/types'
 import { orderColor, orderRef } from '@/lib/order-color'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { Clock, RefreshCw } from 'lucide-react'
+import { Clock, RefreshCw, Settings } from 'lucide-react'
+import Link from 'next/link'
 
 const NEXT_ACTIONS: Partial<Record<OrderStatus, { status: OrderStatus; label: string; className: string }[]>> = {
   created:           [{ status: 'accepted', label: 'Accept', className: 'bg-green-500 hover:bg-green-600 text-white' },
@@ -87,9 +87,9 @@ export default function SellerOrdersPage() {
   const [orders, setOrders] = useState<FullOrder[]>([])
   const [menuItemsById, setMenuItemsById] = useState<Record<string, MenuItemMini>>({})
   const [storeId, setStoreId] = useState<string | null>(null)
+  const [defaultEta, setDefaultEta] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'active' | 'done'>('active')
-  const [etaInputs, setEtaInputs] = useState<Record<string, string>>({})
   const [updating, setUpdating] = useState<Record<string, boolean>>({})
 
   useEffect(() => { init() }, [])
@@ -101,10 +101,11 @@ export default function SellerOrdersPage() {
     const { data: profile } = await supabase.from('users').select('id').eq('auth_id', user.id).single()
     if (!profile) { setLoading(false); return }
 
-    const { data: store } = await supabase.from('stores').select('id').eq('owner_id', profile.id).single()
+    const { data: store } = await supabase.from('stores').select('id, default_eta_minutes').eq('owner_id', profile.id).single()
     if (!store) { setLoading(false); return }
 
     setStoreId(store.id)
+    setDefaultEta((store as any).default_eta_minutes ?? null)
     await loadOrders(store.id)
 
     const channel = supabase
@@ -164,9 +165,8 @@ export default function SellerOrdersPage() {
   async function updateStatus(orderId: string, newStatus: OrderStatus) {
     setUpdating(prev => ({ ...prev, [orderId]: true }))
     const update: any = { status: newStatus }
-    if (etaInputs[orderId] && newStatus === 'accepted') {
-      const eta = parseInt(etaInputs[orderId])
-      if (!isNaN(eta) && eta > 0) update.eta_minutes = eta
+    if (newStatus === 'accepted' && defaultEta) {
+      update.eta_minutes = defaultEta
     }
     const { error } = await supabase.from('orders').update(update).eq('id', orderId)
     if (error) {
@@ -250,28 +250,19 @@ export default function SellerOrdersPage() {
           ))}
         </div>
 
-        {/* ETA input when accepting */}
-        {order.status === 'created' && (
-          <div>
-            <Separator className="my-2" />
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <Input
-                type="number"
-                placeholder="ETA (minutes)"
-                className="h-8 text-sm"
-                value={etaInputs[order.id] || ''}
-                onChange={(e: any) => setEtaInputs(prev => ({ ...prev, [order.id]: e.target.value }))}
-              />
-            </div>
+        {/* Default ETA preview when about to accept */}
+        {order.status === 'created' && defaultEta && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-orange-50 rounded-lg px-2.5 py-1.5">
+            <Clock className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+            <span>Will notify buyer: delivery in <span className="font-semibold text-orange-600">{defaultEta} min</span></span>
           </div>
         )}
 
-        {/* ETA display when accepted */}
+        {/* ETA confirmed when accepted */}
         {order.status === 'accepted' && order.eta_minutes && (
-          <div className="flex items-center gap-2 text-sm text-orange-600">
+          <div className="flex items-center gap-2 text-xs text-orange-600 font-medium">
             <Clock className="w-3.5 h-3.5" />
-            <span>ETA: {order.eta_minutes} min</span>
+            <span>ETA: {order.eta_minutes} min from order time</span>
           </div>
         )}
 
@@ -309,6 +300,25 @@ export default function SellerOrdersPage() {
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
+
+      {/* ETA banner */}
+      <Link href="/seller/account">
+        <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-orange-500" />
+            <span className="text-sm text-orange-700">
+              Default ETA:{' '}
+              <span className="font-bold">
+                {defaultEta ? `${defaultEta} min` : 'Not set'}
+              </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-orange-500">
+            <Settings className="w-3.5 h-3.5" />
+            Edit
+          </div>
+        </div>
+      </Link>
 
       {/* Tabs */}
       <div className="flex gap-2 bg-gray-100 rounded-xl p-1">
