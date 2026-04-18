@@ -110,7 +110,7 @@ export default function OrdersPage() {
 
 function OrderCard({ order }: { order: OrderWithStore }) {
   const badge = STATUS_BADGE[order.status]
-  const color = orderColor(order.id)
+  const color = orderColor(order.order_type)
   return (
     <Link href={`/orders/${order.id}`}>
       <div className="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:shadow-sm transition-shadow"

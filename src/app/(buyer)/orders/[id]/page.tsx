@@ -99,7 +99,7 @@ export default function OrderTrackerPage() {
 
   const isCancelled = CANCELLED_STATUSES.includes(order.status)
   const badge = STATUS_BADGE[order.status]
-  const color = orderColor(order.id)
+  const color = orderColor(order.order_type)
 
   // Find current step index for progress
   const currentStepIndex = isCancelled
