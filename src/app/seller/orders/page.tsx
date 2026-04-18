@@ -14,12 +14,21 @@ import { Clock, RefreshCw, Settings } from 'lucide-react'
 import Link from 'next/link'
 
 const NEXT_ACTIONS: Partial<Record<OrderStatus, { status: OrderStatus; label: string; className: string }[]>> = {
-  created:           [{ status: 'accepted', label: 'Accept', className: 'bg-green-500 hover:bg-green-600 text-white' },
-                      { status: 'rejected', label: 'Reject', className: 'bg-red-100 hover:bg-red-200 text-red-700' }],
+  created:           [{ status: 'accepted', label: 'Accept', className: 'bg-green-500 hover:bg-green-600 text-white' }],
   accepted:          [{ status: 'dispatched', label: 'Mark Dispatched', className: 'bg-orange-500 hover:bg-orange-600 text-white' }],
   dispatched:        [{ status: 'delivered', label: 'Mark Delivered', className: 'bg-green-500 hover:bg-green-600 text-white' }],
   waiting_payment:   [{ status: 'payment_confirmed', label: 'Confirm Payment', className: 'bg-indigo-500 hover:bg-indigo-600 text-white' },
                       { status: 'payment_failed',    label: 'Payment Failed', className: 'bg-red-100 hover:bg-red-200 text-red-700' }],
+}
+
+const REJECTION_REASONS = {
+  spot:     [
+    { value: 'stock_unavailable',     label: 'Stock not available' },
+    { value: 'delivery_not_possible', label: 'Delivery not possible' },
+  ],
+  preorder: [
+    { value: 'stock_unavailable', label: 'Stock not available' },
+  ],
 }
 
 const STATUS_BADGE: Record<OrderStatus, { label: string; className: string }> = {
@@ -90,6 +99,7 @@ export default function SellerOrdersPage() {
   const [defaultEta, setDefaultEta] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<'active' | 'done'>('active')
+  const [rejectingOrderId, setRejectingOrderId] = useState<string | null>(null)
   const [updating, setUpdating] = useState<Record<string, boolean>>({})
 
   useEffect(() => { init() }, [])
@@ -173,6 +183,22 @@ export default function SellerOrdersPage() {
       toast.error('Failed to update order')
     } else {
       toast.success(`Order ${STATUS_BADGE[newStatus].label.toLowerCase()}`)
+      if (storeId) loadOrders(storeId)
+    }
+    setUpdating(prev => ({ ...prev, [orderId]: false }))
+  }
+
+  async function rejectOrder(orderId: string, reason: string) {
+    setUpdating(prev => ({ ...prev, [orderId]: true }))
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'rejected', cancellation_reason: reason })
+      .eq('id', orderId)
+    if (error) {
+      toast.error('Failed to reject order')
+    } else {
+      toast.success('Order rejected')
+      setRejectingOrderId(null)
       if (storeId) loadOrders(storeId)
     }
     setUpdating(prev => ({ ...prev, [orderId]: false }))
@@ -270,19 +296,59 @@ export default function SellerOrdersPage() {
         {actions.length > 0 && (
           <>
             <Separator />
-            <div className="flex gap-2">
-              {actions.map(action => (
-                <Button
-                  key={action.status}
-                  size="sm"
-                  className={`flex-1 text-sm ${action.className}`}
-                  disabled={isUpdating}
-                  onClick={() => updateStatus(order.id, action.status)}
-                >
-                  {isUpdating ? '…' : action.label}
-                </Button>
-              ))}
-            </div>
+            {/* Rejection reason picker */}
+            {rejectingOrderId === order.id ? (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-red-600">Select rejection reason:</p>
+                <div className="flex flex-col gap-2">
+                  {REJECTION_REASONS[order.order_type as 'spot' | 'preorder']?.map(r => (
+                    <Button
+                      key={r.value}
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-sm border-red-200 text-red-700 hover:bg-red-50 justify-start"
+                      disabled={isUpdating}
+                      onClick={() => rejectOrder(order.id, r.value)}
+                    >
+                      {isUpdating ? '…' : r.label}
+                    </Button>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs text-muted-foreground"
+                    onClick={() => setRejectingOrderId(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                {actions.map(action => (
+                  <Button
+                    key={action.status}
+                    size="sm"
+                    className={`flex-1 text-sm ${action.className}`}
+                    disabled={isUpdating}
+                    onClick={() => updateStatus(order.id, action.status)}
+                  >
+                    {isUpdating ? '…' : action.label}
+                  </Button>
+                ))}
+                {order.status === 'created' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-sm border-red-200 text-red-600 hover:bg-red-50"
+                    disabled={isUpdating}
+                    onClick={() => setRejectingOrderId(order.id)}
+                  >
+                    Reject
+                  </Button>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>

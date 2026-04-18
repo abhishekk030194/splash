@@ -34,6 +34,23 @@ export function activeWindow(windows: PreorderWindow[]): PreorderWindow | null {
 }
 
 /**
+ * Converts a preorder window's order_close time (IST "HH:MM") to a UTC ISO timestamp
+ * for today, then adds bufferMinutes. Used to set auto_cancel_at on preorders.
+ */
+export function windowCloseTimestamp(closeHHMM: string, bufferMinutes = 60): string {
+  const [h, m] = closeHHMM.split(':').map(Number)
+  const IST_OFFSET_MS = 330 * 60 * 1000
+  const now = new Date()
+  const istNow = new Date(now.getTime() + IST_OFFSET_MS)
+  const y = istNow.getUTCFullYear()
+  const mo = istNow.getUTCMonth()
+  const d = istNow.getUTCDate()
+  const closeIST = new Date(Date.UTC(y, mo, d, h, m, 0, 0))
+  const closeUTC = new Date(closeIST.getTime() - IST_OFFSET_MS)
+  return new Date(closeUTC.getTime() + bufferMinutes * 60 * 1000).toISOString()
+}
+
+/**
  * Returns the next upcoming window today, or null if none.
  */
 export function nextWindow(windows: PreorderWindow[]): PreorderWindow | null {

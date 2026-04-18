@@ -80,6 +80,8 @@ export interface Order {
   total: number
   eta_minutes: number | null
   delivery_time: string | null
+  cancellation_reason: string | null
+  auto_cancel_at: string | null
   created_at: string
   store?: Store
   buyer?: User

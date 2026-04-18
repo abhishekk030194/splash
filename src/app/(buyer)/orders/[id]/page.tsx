@@ -12,6 +12,14 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ArrowLeft, Clock, CheckCircle2, Circle, XCircle } from 'lucide-react'
 
+function cancellationMessage(status: OrderStatus, reason: string | null): string {
+  if (reason === 'stock_unavailable')     return 'Kitchen rejected: item(s) not in stock.'
+  if (reason === 'delivery_not_possible') return 'Kitchen rejected: delivery not possible right now.'
+  if (reason === 'auto_timeout')          return 'Order auto-cancelled: kitchen did not respond in time.'
+  if (status === 'rejected')              return 'The kitchen could not accept this order.'
+  return 'This order was cancelled.'
+}
+
 const STATUS_STEPS: { status: OrderStatus; label: string; description: string }[] = [
   { status: 'created',           label: 'Order Placed',       description: 'Waiting for kitchen to accept' },
   { status: 'accepted',          label: 'Accepted',            description: 'Kitchen is preparing your food' },
@@ -188,7 +196,7 @@ export default function OrderTrackerPage() {
           <div>
             <p className="text-sm font-semibold text-red-700">{badge.label}</p>
             <p className="text-xs text-red-500 mt-0.5">
-              {order.status === 'rejected' ? 'The kitchen could not accept this order.' : 'This order was cancelled.'}
+              {cancellationMessage(order.status, order.cancellation_reason)}
             </p>
           </div>
         </div>

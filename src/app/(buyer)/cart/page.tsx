@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getCart, updateQuantity, clearCart, cartTotal, Cart } from '@/lib/cart'
-import { canPlaceAs, activeWindow } from '@/lib/preorder'
+import { canPlaceAs, activeWindow, windowCloseTimestamp } from '@/lib/preorder'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -68,9 +68,10 @@ export default function CartPage() {
 
       if (spotItems.length > 0) {
         const spotTotal = spotItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0)
+        const autoCancelAt = new Date(Date.now() + 15 * 60 * 1000).toISOString()
         const { data: order, error } = await supabase
           .from('orders')
-          .insert({ store_id: cart.store_id, buyer_id: profile.id, status: 'created', order_type: 'spot', total: spotTotal })
+          .insert({ store_id: cart.store_id, buyer_id: profile.id, status: 'created', order_type: 'spot', total: spotTotal, auto_cancel_at: autoCancelAt })
           .select('id')
           .single()
         if (error || !order) { toast.error('Failed to place spot order'); return }
@@ -86,16 +87,17 @@ export default function CartPage() {
         // Group pre-order items by their active window's delivery_time
         // Items with the same delivery time → one order
         // Items with different delivery times → separate orders
-        const byDeliveryTime = new Map<string, typeof preItems>()
+        const byDeliveryTime = new Map<string, { items: typeof preItems; windowClose: string | null }>()
         for (const cartItem of preItems) {
           const win = activeWindow(cartItem.item.preorder_windows ?? [])
           const deliveryTime = win?.delivery_time ?? cartItem.item.delivery_time ?? 'unscheduled'
-          if (!byDeliveryTime.has(deliveryTime)) byDeliveryTime.set(deliveryTime, [])
-          byDeliveryTime.get(deliveryTime)!.push(cartItem)
+          if (!byDeliveryTime.has(deliveryTime)) byDeliveryTime.set(deliveryTime, { items: [], windowClose: win?.order_close ?? null })
+          byDeliveryTime.get(deliveryTime)!.items.push(cartItem)
         }
 
-        for (const [deliveryTime, groupItems] of byDeliveryTime) {
+        for (const [deliveryTime, { items: groupItems, windowClose }] of byDeliveryTime) {
           const groupTotal = groupItems.reduce((sum, { item, quantity }) => sum + item.price * quantity, 0)
+          const autoCancelAt = windowClose ? windowCloseTimestamp(windowClose, 60) : null
           const { data: order, error } = await supabase
             .from('orders')
             .insert({
@@ -105,6 +107,7 @@ export default function CartPage() {
               order_type: 'preorder',
               total: groupTotal,
               delivery_time: deliveryTime === 'unscheduled' ? null : deliveryTime,
+              auto_cancel_at: autoCancelAt,
             })
             .select('id')
             .single()

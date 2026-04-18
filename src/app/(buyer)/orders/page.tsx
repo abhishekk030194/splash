@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Order, OrderItem, OrderStatus } from '@/types'
 import { orderColor, orderRef } from '@/lib/order-color'
-import { ShoppingBag, ChevronRight, Clock } from 'lucide-react'
+import { ShoppingBag, ChevronRight, Clock, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
@@ -129,11 +129,21 @@ function expectedByTime(createdAt: string, etaMinutes: number): string {
   return expected.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })
 }
 
+function cancellationMessage(status: string, reason: string | null): string | null {
+  if (!['rejected', 'cancelled'].includes(status)) return null
+  if (reason === 'stock_unavailable')     return 'Item(s) not in stock'
+  if (reason === 'delivery_not_possible') return 'Delivery not possible'
+  if (reason === 'auto_timeout')          return 'Auto-cancelled: no response in time'
+  if (status === 'rejected')              return 'Rejected by kitchen'
+  return 'Order cancelled'
+}
+
 function OrderCard({ order }: { order: OrderWithStore }) {
   const badge = STATUS_BADGE[order.status]
   const color = orderColor(order.order_type)
   const showEta = order.eta_minutes && order.order_type === 'spot' &&
     ['accepted', 'dispatched'].includes(order.status)
+  const cancelMsg = cancellationMessage(order.status, order.cancellation_reason)
   return (
     <Link href={`/orders/${order.id}`}>
       <div className="bg-white rounded-2xl border p-4 hover:shadow-sm transition-shadow"
@@ -170,6 +180,12 @@ function OrderCard({ order }: { order: OrderWithStore }) {
                   Expect order in <span className="font-bold">{order.eta_minutes} min</span>
                   {' · '}by <span className="font-bold">{expectedByTime(order.created_at, order.eta_minutes!)}</span>
                 </p>
+              </div>
+            )}
+            {cancelMsg && (
+              <div className="mt-2 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                <XCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+                <p className="text-xs text-red-600 font-medium">{cancelMsg}</p>
               </div>
             )}
           </div>
