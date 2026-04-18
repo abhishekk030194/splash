@@ -252,8 +252,12 @@ export default function OrderTrackerPage() {
           <span className="capitalize">{order.order_type}</span>
         </div>
         <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Placed on</span>
+          <span>{new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}</span>
+        </div>
+        <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Placed at</span>
-          <span>{new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}</span>
+          <span>{new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Order ID</span>

@@ -166,6 +166,8 @@ function OrderCard({ order }: { order: OrderWithStore }) {
               <span className="text-xs text-muted-foreground capitalize">{order.order_type}</span>
               <span className="text-xs text-muted-foreground">
                 {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}
+                {', '}
+                {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
               </span>
             </div>
             {order.delivery_time && (
