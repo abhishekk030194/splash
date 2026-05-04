@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nook — Food from your society</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:      #047857;
+      --green-mid:  #059669;
+      --green-lt:   #d1fae5;
+      --green-xlt:  #ecfdf5;
+      --stone:      #f5f5f4;
+      --ink:        #1c1917;
+      --muted:      #78716c;
+      --border:     #e7e5e4;
+      --white:      #ffffff;
+      --blue:       #3b82f6;
+      --pink:       #ec4899;
+      --indigo:     #6366f1;
+      --orange:     #f97316;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--stone);
+      color: var(--ink);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 800; color: var(--green);
+      display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px;
+    }
+    .nav-logo .dot { color: var(--ink); }
+    .nav-pill {
+      background: var(--green); color: white;
+      padding: 6px 18px; border-radius: 100px;
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.3px;
+    }
+
+    /* ── SECTIONS ── */
+    section { padding: 96px 32px; max-width: 1100px; margin: 0 auto; }
+
+    /* ── HERO ── */
+    .hero {
+      padding-top: 140px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green-lt); color: var(--green);
+      padding: 6px 16px; border-radius: 100px;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; margin-bottom: 28px;
+    }
+    .hero-badge .pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green-mid);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .hero h1 {
+      font-size: clamp(2.6rem, 6vw, 4.5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      color: var(--ink);
+      margin-bottom: 24px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--green), #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-sub {
+      font-size: 1.2rem; color: var(--muted); max-width: 600px; margin: 0 auto 48px;
+      font-weight: 400; line-height: 1.7;
+    }
+    .hero-stats {
+      display: flex; justify-content: center; gap: 48px;
+      flex-wrap: wrap; margin-top: 64px;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat .num {
+      font-size: 2.4rem; font-weight: 900; color: var(--green); letter-spacing: -1px;
+      line-height: 1;
+    }
+    .hero-stat .label {
+      font-size: 0.85rem; color: var(--muted); font-weight: 500; margin-top: 4px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none; border-top: 1px solid var(--border);
+      max-width: 1100px; margin: 0 auto;
+    }
+
+    /* ── SECTION HEADER ── */
+    .section-tag {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--green); margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800;
+      letter-spacing: -1px; line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 1.05rem; color: var(--muted); max-width: 560px; line-height: 1.7;
+    }
+
+    /* ── PROBLEM ── */
+    .problem-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px; margin-top: 48px;
+    }
+    .problem-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .problem-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
+    .problem-icon {
+      font-size: 2rem; margin-bottom: 16px; display: block;
+    }
+    .problem-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .problem-card p { font-size: 0.9rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .flow-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0; margin-top: 56px; position: relative;
+    }
+    .flow-step {
+      text-align: center; padding: 0 24px;
+      position: relative;
+    }
+    .flow-step:not(:last-child)::after {
+      content: '→';
+      position: absolute; right: -10px; top: 20px;
+      font-size: 1.5rem; color: var(--border);
+    }
+    .flow-num {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--green-xlt); border: 2px solid var(--green-lt);
+      color: var(--green); font-weight: 800; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .flow-step h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .flow-step p { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── FEATURES TABS ── */
+    .features-wrap { margin-top: 56px; }
+    .tab-bar {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px;
+    }
+    .tab-btn {
+      padding: 8px 20px; border-radius: 100px; border: 1.5px solid var(--border);
+      background: white; color: var(--muted); font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--green); border-color: var(--green); color: white;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+
+    .feat-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px 28px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feat-card:hover { border-color: var(--green-mid); transform: translateY(-2px); }
+    .feat-card .icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: var(--green-xlt); display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; margin-bottom: 16px;
+    }
+    .feat-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .feat-card p { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── TECH ── */
+    .tech-grid {
+      display: flex; flex-wrap: wrap; gap: 12px; margin-top: 40px;
+    }
+    .tech-pill {
+      display: flex; align-items: center; gap: 10px;
+      background: white; border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 18px;
+      font-size: 0.85rem; font-weight: 600;
+      transition: border-color 0.2s;
+    }
+    .tech-pill:hover { border-color: var(--green); }
+    .tech-pill .badge {
+      font-size: 0.7rem; padding: 2px 8px; border-radius: 100px;
+      font-weight: 700; letter-spacing: 0.3px;
+    }
+    .badge-green { background: var(--green-lt); color: var(--green); }
+    .badge-blue { background: #eff6ff; color: var(--blue); }
+    .badge-pink { background: #fdf2f8; color: var(--pink); }
+    .badge-indigo { background: #eef2ff; color: var(--indigo); }
+    .badge-orange { background: #fff7ed; color: var(--orange); }
+
+    /* ── ARCHITECTURE ── */
+    .arch-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px; margin-top: 48px;
+    }
+    .arch-card {
+      border-radius: 18px; padding: 28px;
+      border: 1px solid transparent;
+    }
+    .arch-card.green  { background: var(--green-xlt); border-color: var(--green-lt); }
+    .arch-card.blue   { background: #eff6ff; border-color: #bfdbfe; }
+    .arch-card.pink   { background: #fdf2f8; border-color: #fbcfe8; }
+    .arch-card.indigo { background: #eef2ff; border-color: #c7d2fe; }
+    .arch-card h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 12px; }
+    .arch-card ul { list-style: none; }
+    .arch-card ul li {
+      font-size: 0.83rem; color: var(--muted); padding: 3px 0;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .arch-card ul li::before { content: '·'; font-size: 1.2rem; color: var(--green); }
+
+    /* ── IMPACT ── */
+    .impact-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px; margin-top: 48px;
+    }
+    .impact-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px 24px; text-align: center;
+    }
+    .impact-card .big {
+      font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;
+      line-height: 1; margin-bottom: 8px;
+    }
+    .impact-card .desc { font-size: 0.85rem; color: var(--muted); font-weight: 500; }
+    .impact-card.accent { background: var(--green); border-color: var(--green); }
+    .impact-card.accent .big, .impact-card.accent .desc { color: white; }
+
+    /* ── QUOTE ── */
+    .quote-wrap {
+      background: var(--ink); border-radius: 28px;
+      padding: 56px 48px; text-align: center; margin-top: 64px;
+    }
+    .quote-wrap blockquote {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700; color: white; line-height: 1.4;
+      letter-spacing: -0.5px; max-width: 760px; margin: 0 auto;
+    }
+    .quote-wrap blockquote em {
+      font-style: normal; color: #6ee7b7;
+    }
+    .quote-author { color: #78716c; font-size: 0.85rem; margin-top: 24px; font-weight: 500; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      text-align: center; padding: 40px 32px;
+      font-size: 0.82rem; color: var(--muted);
+    }
+    footer strong { color: var(--ink); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      section { padding: 72px 20px; }
+      .flow-step:not(:last-child)::after { display: none; }
+      .quote-wrap { padding: 40px 28px; }
+      .hero-stats { gap: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">nook<span class="dot">.</span></div>
+  <span class="nav-pill">Product Overview</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="pulse"></span>
+    Now Live &nbsp;·&nbsp; Built in India
+  </div>
+  <h1>Your society's<br /><em>home kitchen</em><br />marketplace.</h1>
+  <p class="hero-sub">
+    Nook connects home chefs with hungry neighbours — bringing freshly made, homestyle food right to your door, ordered in seconds from your phone.
+  </p>
+
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <div class="num">3</div>
+      <div class="label">User Roles</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">2</div>
+      <div class="label">Order Types</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">8+</div>
+      <div class="label">API Endpoints</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">PWA</div>
+      <div class="label">Installable App</div>
+    </div>
+    <div class="hero-stat">
+      <div class="num">∞</div>
+      <div class="label">Home chefs, empowered</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- PROBLEM -->
+<section>
+  <p class="section-tag">Why Nook</p>
+  <h2 class="section-title">A problem hiding in plain sight.</h2>
+  <p class="section-sub">
+    Millions of talented home cooks in Indian housing societies have no platform built for them. Nook changes that.
+  </p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <span class="problem-icon">🍱</span>
+      <h3>Home kitchens have no storefront</h3>
+      <p>Talented cooks in your building take orders over WhatsApp — no menu, no payments, no tracking, no analytics.</p>
+    </div>
+    <div class="problem-card">
+      <span class="problem-icon">📍</span>
+      <h3>Hyperlocal means truly local</h3>
+      <p>Zomato and Swiggy are built for restaurants. Society food is different — shorter distances, trusted cooks, home-style meals.</p>
+    </div>
+    <div class="problem-card">
+      <span class="problem-icon">📅</span>
+      <h3>Pre-orders don't fit anywhere</h3>
+      <p>Tiffin services, festive platters, and weekly meal plans need scheduled ordering — a flow no food-delivery app handles well.</p>
+    </div>
+    <div class="problem-card">
+      <span class="problem-icon">💳</span>
+      <h3>Payment is chaos</h3>
+      <p>UPI screenshots, cash on delivery, and "I'll pay later" are the norm. Nook brings structured online payments and COD options together.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- HOW IT WORKS -->
+<section>
+  <p class="section-tag">How it works</p>
+  <h2 class="section-title">Simple. Fast. Delicious.</h2>
+  <p class="section-sub">From discovery to doorstep in a few taps — for buyers and sellers both.</p>
+  <div class="flow-grid">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <h3>Open location</h3>
+      <p>Nook detects your position and surfaces kitchens in your society first.</p>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <h3>Browse & order</h3>
+      <p>Choose spot orders (ready now) or pre-orders (scheduled windows).</p>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <h3>Pay your way</h3>
+      <p>Online via Razorpay, cash on delivery, or pay on arrival — buyer's choice.</p>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <h3>Track live</h3>
+      <p>Real-time order status, push notifications, and full history on both sides.</p>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <h3>Seller earns</h3>
+      <p>Home chefs manage orders, analyse revenue, and grow their kitchen business.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- FEATURES -->
+<section>
+  <p class="section-tag">Features</p>
+  <h2 class="section-title">Built for every stakeholder.</h2>
+  <p class="section-sub">Three distinct portals — each purpose-built for its user.</p>
+
+  <div class="features-wrap">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('buyer', this)">🛍 Buyer</button>
+      <button class="tab-btn" onclick="switchTab('seller', this)">👨‍🍳 Seller</button>
+      <button class="tab-btn" onclick="switchTab('admin', this)">🏛 Admin</button>
+    </div>
+
+    <!-- BUYER -->
+    <div class="tab-panel active" id="tab-buyer">
+      <div class="feat-card">
+        <div class="icon">📍</div>
+        <h4>Location-aware discovery</h4>
+        <p>Auto-detects your society using GPS and Nominatim geocoding. Shows kitchens by proximity — in your society, nearby, or broader radius.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">⚡</div>
+        <h4>Spot & pre-orders</h4>
+        <p>Order food that's ready now (spot) or schedule ahead for tiffin and meal prep windows (pre-order) — two entirely different flows handled elegantly.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">🚚</div>
+        <h4>Delivery or pickup</h4>
+        <p>Choose delivery to your flat or self-pickup. Delivery address, flat number, floor, and landmark — all captured at checkout.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">💳</div>
+        <h4>Flexible payments</h4>
+        <p>Pay online via Razorpay, cash on delivery, or online on delivery — whatever the kitchen accepts, the buyer can choose.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">📦</div>
+        <h4>Live order tracking</h4>
+        <p>Status timeline from placement to delivery, with full cancel-before-accept support and push notifications at every step.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">🔔</div>
+        <h4>Push notifications</h4>
+        <p>Web push keeps buyers informed on acceptance, dispatch, and delivery — works even when the browser is closed (PWA).</p>
+      </div>
+    </div>
+
+    <!-- SELLER -->
+    <div class="tab-panel" id="tab-seller">
+      <div class="feat-card">
+        <div class="icon">📋</div>
+        <h4>Full menu management</h4>
+        <p>Create item groups (categories), add items with photos, pricing, and descriptions. Toggle availability in one tap. Drag to reorder.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">🕐</div>
+        <h4>Flexible order windows</h4>
+        <p>Define spot ordering hours per day. Create multiple pre-order windows with custom open/close and delivery times — ideal for tiffin services.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">✅</div>
+        <h4>Order workflow</h4>
+        <p>Accept, dispatch, or reject orders with structured rejection reasons. Auto-cancellation if no response within the configured window.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">📊</div>
+        <h4>Analytics dashboard</h4>
+        <p>Revenue trends, order funnel, acceptance rates, top items by count and revenue, cancellation breakdown — all with date-range filtering.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">🗺</div>
+        <h4>Delivery zone control</h4>
+        <p>Set delivery scope to society-only (within 500m) or a custom radius. Configure separate delivery fees for spot vs. pre-orders.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">🔔</div>
+        <h4>Instant new-order alerts</h4>
+        <p>Push notifications fire the moment an order lands — so sellers never miss a customer even if the tab is in the background.</p>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="tab-panel" id="tab-admin">
+      <div class="feat-card">
+        <div class="icon">📈</div>
+        <h4>Platform GMV dashboard</h4>
+        <p>Gross Merchandise Value broken down by today, this month, and all-time — the top-line number leadership cares about.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">🏪</div>
+        <h4>Kitchen oversight</h4>
+        <p>Total and active kitchen count, store-level visibility, commission configuration, and onboarding status.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">👥</div>
+        <h4>User management</h4>
+        <p>Buyers vs. sellers breakdown, user lookup API, and role-based access control enforced across all admin routes.</p>
+      </div>
+      <div class="feat-card">
+        <div class="icon">🗂</div>
+        <h4>Live order feed</h4>
+        <p>Real-time view of the last 10 platform orders — kitchen, buyer, status, amount, timestamp — to monitor operational health.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- TECH -->
+<section>
+  <p class="section-tag">Technology</p>
+  <h2 class="section-title">Modern stack. Production-grade.</h2>
+  <p class="section-sub">Every tool chosen for speed, reliability, and developer experience. No over-engineering.</p>
+
+  <div class="tech-grid">
+    <div class="tech-pill"><span>▲</span> Next.js 16 <span class="badge badge-green">App Router</span></div>
+    <div class="tech-pill"><span>⚡</span> Turbopack <span class="badge badge-green">Build tool</span></div>
+    <div class="tech-pill"><span>🟦</span> Supabase <span class="badge badge-blue">DB + Auth</span></div>
+    <div class="tech-pill"><span>💳</span> Razorpay <span class="badge badge-blue">Payments</span></div>
+    <div class="tech-pill"><span>🔔</span> Web Push API <span class="badge badge-indigo">Notifications</span></div>
+    <div class="tech-pill"><span>📱</span> PWA <span class="badge badge-green">Installable</span></div>
+    <div class="tech-pill"><span>🚨</span> Sentry <span class="badge badge-pink">Error monitoring</span></div>
+    <div class="tech-pill"><span>📊</span> Recharts <span class="badge badge-indigo">Analytics</span></div>
+    <div class="tech-pill"><span>🗺</span> Nominatim <span class="badge badge-orange">Geocoding</span></div>
+    <div class="tech-pill"><span>🎨</span> Tailwind CSS v4 <span class="badge badge-blue">Styling</span></div>
+    <div class="tech-pill"><span>🧩</span> shadcn/ui <span class="badge badge-green">Components</span></div>
+    <div class="tech-pill"><span>🔒</span> Rate limiting <span class="badge badge-pink">Security</span></div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ARCHITECTURE -->
+<section>
+  <p class="section-tag">Architecture</p>
+  <h2 class="section-title">Three portals. One platform.</h2>
+  <p class="section-sub">Clean separation of concerns — each user type gets a dedicated, secure experience.</p>
+  <div class="arch-grid">
+    <div class="arch-card green">
+      <h4>🛍 Buyer Portal <code style="font-size:0.75rem;opacity:0.6">/</code></h4>
+      <ul>
+        <li>Home with kitchen discovery</li>
+        <li>Store menu & item detail</li>
+        <li>Cart & checkout flow</li>
+        <li>Orders list & live tracker</li>
+        <li>Account & profile</li>
+      </ul>
+    </div>
+    <div class="arch-card blue">
+      <h4>👨‍🍳 Seller Portal <code style="font-size:0.75rem;opacity:0.6">/seller</code></h4>
+      <ul>
+        <li>Onboarding wizard</li>
+        <li>Listings & menu editor</li>
+        <li>Orders management</li>
+        <li>Analytics dashboard</li>
+        <li>Account & store settings</li>
+      </ul>
+    </div>
+    <div class="arch-card pink">
+      <h4>🏛 Admin Portal <code style="font-size:0.75rem;opacity:0.6">/admin</code></h4>
+      <ul>
+        <li>GMV & revenue metrics</li>
+        <li>All stores overview</li>
+        <li>All orders feed</li>
+        <li>User management</li>
+      </ul>
+    </div>
+    <div class="arch-card indigo">
+      <h4>⚙️ API Layer <code style="font-size:0.75rem;opacity:0.6">/api</code></h4>
+      <ul>
+        <li>Auth profile sync</li>
+        <li>Order status updates</li>
+        <li>Razorpay create + verify</li>
+        <li>Push subscribe + send</li>
+        <li>Seller notifications</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- IMPACT -->
+<section>
+  <p class="section-tag">Why it matters</p>
+  <h2 class="section-title">Real impact. Real people.</h2>
+  <p class="section-sub">Nook isn't just an app — it's an economic engine for home-based micro-entrepreneurs.</p>
+  <div class="impact-grid">
+    <div class="impact-card accent">
+      <div class="big">0 → 1</div>
+      <div class="desc">From WhatsApp chaos to a real storefront</div>
+    </div>
+    <div class="impact-card">
+      <div class="big" style="color:var(--green)">₹0</div>
+      <div class="desc">Setup cost for a home chef to go live</div>
+    </div>
+    <div class="impact-card">
+      <div class="big" style="color:var(--blue)">< 5 min</div>
+      <div class="desc">Time to onboard a new kitchen</div>
+    </div>
+    <div class="impact-card">
+      <div class="big" style="color:var(--pink)">100%</div>
+      <div class="desc">Mobile-first, installable as a PWA</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- QUOTE -->
+<section style="padding-top: 48px; padding-bottom: 96px;">
+  <div class="quote-wrap">
+    <blockquote>
+      "The best food in any society isn't in a restaurant — it's coming from a kitchen two floors up. <em>Nook makes it findable, orderable, and sustainable</em> for the person making it."
+    </blockquote>
+    <p class="quote-author">— The vision behind Nook</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>Built with ❤️ by <strong>Abhishek Kumar</strong> &nbsp;·&nbsp; <strong>Nook</strong> — Food from your society</p>
+  <p style="margin-top: 8px; font-size: 0.78rem;">Next.js · Supabase · Razorpay · Web Push · Sentry · PWA</p>
+</footer>
+
+<script>
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
