@@ -71,7 +71,7 @@ export default function StorePage() {
   if (!store) return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-muted-foreground">
       <p>Kitchen not found</p>
-      <Link href="/" className="text-orange-500 underline mt-2 text-sm">← Back home</Link>
+      <Link href="/" className="text-emerald-700 underline mt-2 text-sm">← Back home</Link>
     </div>
   )
 
@@ -82,7 +82,7 @@ export default function StorePage() {
     <div className="pb-32">
       {/* Store header */}
       <div className="relative">
-        <div className="h-40 bg-orange-100 flex items-center justify-center overflow-hidden">
+        <div className="h-40 bg-emerald-100 flex items-center justify-center overflow-hidden">
           {store.image_url
             ? <img src={store.image_url} alt={store.name} className="w-full h-full object-cover" />
             : <span className="text-6xl">🍳</span>
@@ -126,7 +126,7 @@ export default function StorePage() {
           if (groupItems.length === 0) return null
           return (
             <div key={group.id}>
-              <h2 className="font-semibold text-sm uppercase tracking-wide text-orange-700 mb-2">{group.name}</h2>
+              <h2 className="font-semibold text-sm uppercase tracking-wide text-emerald-800 mb-2">{group.name}</h2>
               <div className="space-y-2">
                 {groupItems.map(item => (
                   <ItemRow
@@ -147,7 +147,7 @@ export default function StorePage() {
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t z-20">
           <div className="max-w-2xl mx-auto">
             <Link href="/cart">
-              <Button className="w-full bg-orange-500 hover:bg-orange-600 h-12">
+              <Button className="w-full bg-emerald-700 hover:bg-emerald-800 h-12">
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 View Cart · {cartItemCount} {cartItemCount === 1 ? 'item' : 'items'}
               </Button>
@@ -169,7 +169,7 @@ function OrderTypeTag({ spotAvail, preAvail }: { spotAvail: boolean; preAvail: b
   }
   if (spotAvail) {
     return (
-      <Badge variant="secondary" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+      <Badge variant="secondary" className="text-xs bg-emerald-50 text-emerald-800 border-emerald-200">
         Spot Order
       </Badge>
     )
@@ -210,7 +210,7 @@ function ItemRow({ item, getQuantity, onAdd, onQtyChange }: {
           {item.is_combo && <Badge variant="secondary" className="text-xs">Combo</Badge>}
         </div>
         {item.subtitle && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.subtitle}</p>}
-        <p className="text-sm font-semibold text-orange-600 mt-1">₹{item.price}</p>
+        <p className="text-sm font-semibold text-emerald-800 mt-1">₹{item.price}</p>
         <div className="mt-1">
           <OrderTypeTag spotAvail={spotAvail} preAvail={preAvail} />
           {closedLabel && (
@@ -230,18 +230,18 @@ function ItemRow({ item, getQuantity, onAdd, onQtyChange }: {
           <>
             {spotAvail && (
               <div className="flex flex-col items-end gap-0.5">
-                <span className="text-xs font-medium text-orange-600">Spot</span>
+                <span className="text-xs font-medium text-emerald-800">Spot</span>
                 {spotQty === 0 ? (
-                  <Button size="sm" variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50 h-7 px-3 text-xs" onClick={() => onAdd('spot')}>
+                  <Button size="sm" variant="outline" className="border-emerald-500 text-emerald-800 hover:bg-emerald-50 h-7 px-3 text-xs" onClick={() => onAdd('spot')}>
                     Add
                   </Button>
                 ) : (
                   <div className="flex items-center gap-1.5">
-                    <button onClick={() => onQtyChange(item.id, 'spot', spotQty - 1)} className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center">
-                      <Minus className="w-3 h-3 text-orange-600" />
+                    <button onClick={() => onQtyChange(item.id, 'spot', spotQty - 1)} className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <Minus className="w-3 h-3 text-emerald-800" />
                     </button>
                     <span className="text-sm font-semibold w-4 text-center">{spotQty}</span>
-                    <button onClick={() => onQtyChange(item.id, 'spot', spotQty + 1)} className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center">
+                    <button onClick={() => onQtyChange(item.id, 'spot', spotQty + 1)} className="w-6 h-6 rounded-full bg-emerald-700 flex items-center justify-center">
                       <Plus className="w-3 h-3 text-white" />
                     </button>
                   </div>

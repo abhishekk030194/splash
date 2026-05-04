@@ -12,7 +12,7 @@ export interface Cart {
   items: CartItem[]
 }
 
-const CART_KEY = 'splash_cart'
+const CART_KEY = 'nook_cart'
 
 function cartKey(itemId: string, orderType: 'spot' | 'preorder') {
   return `${itemId}::${orderType}`

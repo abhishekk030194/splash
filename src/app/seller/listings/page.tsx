@@ -244,7 +244,7 @@ export default function SellerListingsPage() {
           <Button variant="outline" size="sm" onClick={openAddGroup}>
             <Layers className="w-4 h-4 mr-1" /> Group
           </Button>
-          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" onClick={() => openAddItem()}>
+          <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800" onClick={() => openAddItem()}>
             <Plus className="w-4 h-4 mr-1" /> Item
           </Button>
         </div>
@@ -270,7 +270,7 @@ export default function SellerListingsPage() {
           <div key={group.id} className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <button
-                className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide text-orange-700"
+                className="flex items-center gap-2 font-semibold text-sm uppercase tracking-wide text-emerald-800"
                 onClick={() => toggleGroupCollapse(group.id)}
               >
                 {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -290,7 +290,7 @@ export default function SellerListingsPage() {
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteGroup(group.id)}>
                   <Trash2 className="w-3 h-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-orange-500" onClick={() => openAddItem(group.id)}>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-700" onClick={() => openAddItem(group.id)}>
                   <Plus className="w-3 h-3" />
                 </Button>
               </div>
@@ -298,7 +298,7 @@ export default function SellerListingsPage() {
             {!collapsed && (
               <div className="space-y-2">
                 {groupItems.length === 0 ? (
-                  <p className="text-xs text-muted-foreground pl-2">No items yet. <button className="text-orange-500 underline" onClick={() => openAddItem(group.id)}>Add one</button></p>
+                  <p className="text-xs text-muted-foreground pl-2">No items yet. <button className="text-emerald-700 underline" onClick={() => openAddItem(group.id)}>Add one</button></p>
                 ) : (
                   groupItems.map(item => (
                     <ItemCard key={item.id} item={item} onEdit={openEditItem} onDelete={deleteItem} onToggle={toggleItem} />
@@ -315,7 +315,7 @@ export default function SellerListingsPage() {
           <div className="text-4xl mb-3">🍽️</div>
           <p className="font-medium">Your menu is empty</p>
           <p className="text-sm mt-1">Add your first item to get started</p>
-          <Button className="mt-4 bg-orange-500 hover:bg-orange-600" onClick={() => openAddItem()}>
+          <Button className="mt-4 bg-emerald-700 hover:bg-emerald-800" onClick={() => openAddItem()}>
             <Plus className="w-4 h-4 mr-1" /> Add Item
           </Button>
         </div>
@@ -332,10 +332,10 @@ export default function SellerListingsPage() {
             {/* Item image */}
             <div className="flex items-center gap-4">
               <label htmlFor="item-img" className="cursor-pointer flex-shrink-0">
-                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-orange-200 overflow-hidden flex items-center justify-center bg-orange-50 hover:border-orange-400 transition-colors">
+                <div className="w-20 h-20 rounded-xl border-2 border-dashed border-emerald-200 overflow-hidden flex items-center justify-center bg-emerald-50 hover:border-emerald-500 transition-colors">
                   {imagePreview
                     ? <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
-                    : <div className="text-center"><Camera className="w-5 h-5 mx-auto text-orange-300" /><p className="text-xs text-muted-foreground mt-1">Add photo</p></div>
+                    : <div className="text-center"><Camera className="w-5 h-5 mx-auto text-emerald-300" /><p className="text-xs text-muted-foreground mt-1">Add photo</p></div>
                   }
                 </div>
               </label>
@@ -424,9 +424,9 @@ export default function SellerListingsPage() {
                 )}
 
                 {preorderWindows.map((win, idx) => (
-                  <div key={idx} className="border rounded-xl p-3 space-y-2 bg-orange-50/50">
+                  <div key={idx} className="border rounded-xl p-3 space-y-2 bg-emerald-50/50">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-orange-700">Window {idx + 1}</span>
+                      <span className="text-xs font-semibold text-emerald-800">Window {idx + 1}</span>
                       <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removePreorderWindow(idx)}>
                         <X className="w-3 h-3" />
                       </Button>
@@ -467,7 +467,7 @@ export default function SellerListingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setItemDialog(false)}>Cancel</Button>
-            <Button className="bg-orange-500 hover:bg-orange-600" onClick={saveItem}>
+            <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={saveItem}>
               {editingItem ? 'Save Changes' : 'Add Item'}
             </Button>
           </DialogFooter>
@@ -486,7 +486,7 @@ export default function SellerListingsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGroupDialog(false)}>Cancel</Button>
-            <Button className="bg-orange-500 hover:bg-orange-600" onClick={saveGroup}>
+            <Button className="bg-emerald-700 hover:bg-emerald-800" onClick={saveGroup}>
               {editingGroup ? 'Rename' : 'Create Group'}
             </Button>
           </DialogFooter>
@@ -518,7 +518,7 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
         </div>
         {item.subtitle && <p className="text-xs text-muted-foreground truncate mt-0.5">{item.subtitle}</p>}
         <div className="flex items-center gap-2 mt-1">
-          <p className="text-sm font-semibold text-orange-600">₹{item.price}</p>
+          <p className="text-sm font-semibold text-emerald-800">₹{item.price}</p>
           {item.preorder_windows?.length > 0 && (
             <span className="text-xs text-muted-foreground flex items-center gap-0.5">
               <Clock className="w-3 h-3" /> {item.preorder_windows.length} pre-order {item.preorder_windows.length === 1 ? 'window' : 'windows'}

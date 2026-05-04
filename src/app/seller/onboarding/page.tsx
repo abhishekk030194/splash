@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2, LogOut } from 'lucide-react'
 
 export default function SellerOnboardingPage() {
   const [supabase] = useState(() => createClient())
@@ -74,7 +74,7 @@ export default function SellerOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="text-4xl mb-2">🍳</div>
@@ -84,7 +84,7 @@ export default function SellerOnboardingPage() {
         <CardContent className="space-y-5">
           <div className="flex flex-col items-center gap-2">
             <label htmlFor="store-img" className="cursor-pointer">
-              <div className={`w-24 h-24 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors ${imagePreview ? 'border-orange-300' : 'border-gray-300 hover:border-orange-400'}`}>
+              <div className={`w-24 h-24 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-colors ${imagePreview ? 'border-emerald-300' : 'border-gray-300 hover:border-emerald-500'}`}>
                 {imagePreview
                   ? <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
                   : <div className="text-center text-muted-foreground"><Camera className="w-6 h-6 mx-auto mb-1" /><span className="text-xs">Add photo</span></div>
@@ -105,9 +105,16 @@ export default function SellerOnboardingPage() {
             <Textarea placeholder="What do you cook? Any specialty?" value={description} onChange={e => setDescription(e.target.value)} rows={3} />
           </div>
 
-          <Button className="w-full bg-orange-500 hover:bg-orange-600" onClick={handleSubmit} disabled={loading}>
+          <Button className="w-full bg-emerald-700 hover:bg-emerald-800" onClick={handleSubmit} disabled={loading}>
             {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating…</> : 'Create My Kitchen →'}
           </Button>
+
+          <button
+            onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login' }}
+            className="w-full flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors py-1"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Sign out
+          </button>
         </CardContent>
       </Card>
     </div>

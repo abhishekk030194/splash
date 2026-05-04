@@ -30,6 +30,20 @@ export interface Store {
   is_active: boolean
   commission_pct: number
   created_at: string
+  // Location & delivery
+  lat: number | null
+  lng: number | null
+  society_name: string | null
+  delivery_scope: 'society_only' | 'radius'
+  delivery_radius_km: number | null
+  // Fulfillment
+  offers_pickup: boolean
+  offers_delivery: boolean
+  delivery_fee_spot: number
+  delivery_fee_preorder: number
+  // Payment methods
+  accepts_cod: boolean
+  accepts_online_on_delivery: boolean
 }
 
 export interface ItemGroup {
@@ -80,6 +94,17 @@ export interface Order {
   total: number
   eta_minutes: number | null
   delivery_time: string | null
+  fulfillment_type: 'pickup' | 'delivery' | null
+  delivery_fee: number
+  payment_method: 'online' | 'cod' | 'online_on_delivery' | null
+  payment_collected_at: string | null
+  delivery_address: string | null
+  delivery_name: string | null
+  delivery_phone: string | null
+  delivery_flat: string | null
+  delivery_floor: string | null
+  delivery_apartment: string | null
+  delivery_landmark: string | null
   cancellation_reason: string | null
   auto_cancel_at: string | null
   created_at: string

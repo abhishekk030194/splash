@@ -12,13 +12,13 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { Clock, RefreshCw, Settings } from 'lucide-react'
 import Link from 'next/link'
+import { OrderTypePill } from '@/components/OrderTypePill'
 
 const NEXT_ACTIONS: Partial<Record<OrderStatus, { status: OrderStatus; label: string; className: string }[]>> = {
-  created:           [{ status: 'accepted', label: 'Accept', className: 'bg-green-500 hover:bg-green-600 text-white' }],
-  accepted:          [{ status: 'dispatched', label: 'Mark Dispatched', className: 'bg-orange-500 hover:bg-orange-600 text-white' }],
-  dispatched:        [{ status: 'delivered', label: 'Mark Delivered', className: 'bg-green-500 hover:bg-green-600 text-white' }],
-  waiting_payment:   [{ status: 'payment_confirmed', label: 'Confirm Payment', className: 'bg-indigo-500 hover:bg-indigo-600 text-white' },
-                      { status: 'payment_failed',    label: 'Payment Failed', className: 'bg-red-100 hover:bg-red-200 text-red-700' }],
+  created:           [{ status: 'accepted',   label: 'Accept',          className: 'bg-green-500 hover:bg-green-600 text-white' }],
+  payment_confirmed: [{ status: 'accepted',   label: 'Accept',          className: 'bg-green-500 hover:bg-green-600 text-white' }],
+  accepted:          [{ status: 'dispatched', label: 'Mark Dispatched', className: 'bg-emerald-700 hover:bg-emerald-800 text-white' }],
+  dispatched:        [{ status: 'delivered',  label: 'Mark Delivered',  className: 'bg-green-500 hover:bg-green-600 text-white' }],
 }
 
 const REJECTION_REASONS = {
@@ -32,19 +32,19 @@ const REJECTION_REASONS = {
 }
 
 const STATUS_BADGE: Record<OrderStatus, { label: string; className: string }> = {
-  created:           { label: 'New',               className: 'bg-yellow-100 text-yellow-800' },
+  created:           { label: 'New Order',          className: 'bg-green-100 text-green-800' },
   accepted:          { label: 'Accepted',           className: 'bg-blue-100 text-blue-800' },
-  waiting_payment:   { label: 'Awaiting Payment',   className: 'bg-purple-100 text-purple-800' },
-  payment_confirmed: { label: 'Paid',               className: 'bg-indigo-100 text-indigo-800' },
-  dispatched:        { label: 'Dispatched',         className: 'bg-orange-100 text-orange-800' },
+  waiting_payment:   { label: 'Awaiting Payment',   className: 'bg-purple-100 text-purple-700' },
+  payment_confirmed: { label: 'Paid — New',         className: 'bg-green-100 text-green-800' },
+  dispatched:        { label: 'Dispatched',         className: 'bg-emerald-100 text-emerald-900' },
   delivered:         { label: 'Delivered',          className: 'bg-green-100 text-green-800' },
   rejected:          { label: 'Rejected',           className: 'bg-red-100 text-red-800' },
   cancelled:         { label: 'Cancelled',          className: 'bg-gray-100 text-gray-600' },
   payment_failed:    { label: 'Payment Failed',     className: 'bg-red-100 text-red-800' },
 }
 
-const ACTIVE_STATUSES: OrderStatus[] = ['created', 'accepted', 'waiting_payment', 'payment_confirmed', 'dispatched']
-const DONE_STATUSES: OrderStatus[] = ['delivered', 'rejected', 'cancelled', 'payment_failed']
+const ACTIVE_STATUSES: OrderStatus[] = ['created', 'waiting_payment', 'payment_confirmed', 'accepted', 'dispatched']
+const DONE_STATUSES: OrderStatus[]   = ['delivered', 'rejected', 'cancelled', 'payment_failed']
 
 interface MenuItemMini {
   id: string
@@ -174,12 +174,16 @@ export default function SellerOrdersPage() {
 
   async function updateStatus(orderId: string, newStatus: OrderStatus) {
     setUpdating(prev => ({ ...prev, [orderId]: true }))
-    const update: any = { status: newStatus }
-    if (newStatus === 'accepted' && defaultEta) {
-      update.eta_minutes = defaultEta
-    }
-    const { error } = await supabase.from('orders').update(update).eq('id', orderId)
-    if (error) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const body: any = { order_id: orderId, status: newStatus }
+    if (newStatus === 'accepted' && defaultEta) body.eta_minutes = defaultEta
+
+    const res = await fetch('/api/orders/update-status', {
+      method:  'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session?.access_token}` },
+      body:    JSON.stringify(body),
+    })
+    if (!res.ok) {
       toast.error('Failed to update order')
     } else {
       toast.success(`Order ${STATUS_BADGE[newStatus].label.toLowerCase()}`)
@@ -188,13 +192,26 @@ export default function SellerOrdersPage() {
     setUpdating(prev => ({ ...prev, [orderId]: false }))
   }
 
-  async function rejectOrder(orderId: string, reason: string) {
+  async function markPaymentCollected(orderId: string) {
     setUpdating(prev => ({ ...prev, [orderId]: true }))
     const { error } = await supabase
       .from('orders')
-      .update({ status: 'rejected', cancellation_reason: reason })
+      .update({ payment_collected_at: new Date().toISOString() })
       .eq('id', orderId)
-    if (error) {
+    if (error) toast.error('Failed to mark payment collected')
+    else { toast.success('Payment marked as collected'); if (storeId) loadOrders(storeId) }
+    setUpdating(prev => ({ ...prev, [orderId]: false }))
+  }
+
+  async function rejectOrder(orderId: string, reason: string) {
+    setUpdating(prev => ({ ...prev, [orderId]: true }))
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/orders/update-status', {
+      method:  'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${session?.access_token}` },
+      body:    JSON.stringify({ order_id: orderId, status: 'rejected', cancellation_reason: reason }),
+    })
+    if (!res.ok) {
       toast.error('Failed to reject order')
     } else {
       toast.success('Order rejected')
@@ -217,11 +234,30 @@ export default function SellerOrdersPage() {
   )
 
   function renderOrder(order: FullOrder) {
-    const badge = STATUS_BADGE[order.status]
-    const actions = NEXT_ACTIONS[order.status] || []
+    const fulfillment = (order as any).fulfillment_type as 'pickup' | 'delivery' | null
+    const rawBadge = STATUS_BADGE[order.status]
+    const badge = (fulfillment === 'pickup' && order.status === 'dispatched')
+      ? { label: 'Ready for Pickup', className: rawBadge.className }
+      : (fulfillment === 'pickup' && order.status === 'delivered')
+      ? { label: 'Collected', className: rawBadge.className }
+      : rawBadge
     const isUpdating = updating[order.id]
     const isPreorder = order.order_type === 'preorder'
     const deliveryTime = order.delivery_time
+    const paymentMethod = (order as any).payment_method as 'online' | 'cod' | 'online_on_delivery' | null
+    const paymentCollectedAt = (order as any).payment_collected_at as string | null
+    const isCodFlow = paymentMethod === 'cod' || paymentMethod === 'online_on_delivery'
+    const needsPaymentCollection = isCodFlow && ['dispatched', 'delivered'].includes(order.status) && !paymentCollectedAt
+    // Remap action labels for pickup orders
+    const pickupLabels: Record<string, string> = { 'Mark Dispatched': 'Mark Ready for Pickup', 'Mark Delivered': 'Mark Collected' }
+    const baseActions = NEXT_ACTIONS[order.status] || []
+    const mappedActions = fulfillment === 'pickup'
+      ? baseActions.map(a => ({ ...a, label: pickupLabels[a.label] ?? a.label }))
+      : baseActions
+    // For COD dispatched orders, block "Mark Collected/Delivered" until payment is collected
+    const actions = (isCodFlow && order.status === 'dispatched' && !paymentCollectedAt)
+      ? [] // hide actions — must collect payment first
+      : mappedActions
 
     return (
       <div key={order.id} className="bg-white rounded-2xl border p-4 space-y-3"
@@ -231,6 +267,7 @@ export default function SellerOrdersPage() {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <p className="font-semibold text-sm">{order.buyer_name}</p>
+              <OrderTypePill type={order.order_type} />
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge.className}`}>
                 {badge.label}
               </span>
@@ -247,8 +284,112 @@ export default function SellerOrdersPage() {
               </span>
             </div>
           </div>
-          <p className="text-sm font-bold text-orange-600">₹{order.total.toFixed(2)}</p>
+          <div className="text-right">
+            <p className="text-sm font-bold text-emerald-800">₹{order.total.toFixed(2)}</p>
+            {(order as any).delivery_fee > 0 && (
+              <p className="text-xs text-muted-foreground">incl. ₹{(order as any).delivery_fee.toFixed(2)} delivery</p>
+            )}
+          </div>
         </div>
+
+        {/* Fulfillment + payment method badges */}
+        <div className="flex flex-wrap gap-2">
+          {fulfillment && (
+            <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${
+              fulfillment === 'pickup'
+                ? 'bg-blue-50 border border-blue-100'
+                : 'bg-emerald-50 border border-emerald-100'
+            }`}>
+              <span className="text-base">{fulfillment === 'pickup' ? '🏃' : '🛵'}</span>
+              <span className={`text-xs font-semibold ${fulfillment === 'pickup' ? 'text-blue-700' : 'text-emerald-800'}`}>
+                {fulfillment === 'pickup' ? 'Self Pickup' : 'Delivery'}
+              </span>
+            </div>
+          )}
+          {paymentMethod && paymentMethod !== 'online' && (
+            <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${
+              paymentMethod === 'cod'
+                ? 'bg-yellow-50 border border-yellow-100'
+                : 'bg-purple-50 border border-purple-100'
+            }`}>
+              <span className="text-base">{paymentMethod === 'cod' ? '💵' : '📱'}</span>
+              <span className={`text-xs font-semibold ${paymentMethod === 'cod' ? 'text-yellow-700' : 'text-purple-700'}`}>
+                {paymentMethod === 'cod' ? 'Cash on Delivery' : 'Pay on Delivery'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Payment collection status */}
+        {(paymentMethod === 'cod' || paymentMethod === 'online_on_delivery') && (
+          paymentCollectedAt ? (
+            <div className="flex items-center gap-2 rounded-xl bg-green-50 border border-green-100 px-3 py-2">
+              <span className="text-base">✅</span>
+              <div>
+                <p className="text-xs font-semibold text-green-700">Payment Collected</p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(paymentCollectedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
+                  {', '}
+                  {new Date(paymentCollectedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className={`rounded-xl px-3 py-2.5 border ${
+              needsPaymentCollection
+                ? 'bg-yellow-50 border-yellow-300'
+                : 'bg-gray-50 border-gray-100'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span className="text-base">{paymentMethod === 'cod' ? '💵' : '📱'}</span>
+                <div className="flex-1">
+                  <p className={`text-xs font-semibold ${needsPaymentCollection ? 'text-yellow-800' : 'text-gray-500'}`}>
+                    {paymentMethod === 'cod' ? 'Cash on Delivery' : 'Pay Online Before Delivery'}
+                  </p>
+                  {needsPaymentCollection && (
+                    <p className="text-xs text-yellow-600 mt-0.5">
+                      {paymentMethod === 'cod'
+                        ? 'Collect cash before marking delivered'
+                        : 'Waiting for buyer to pay online — cannot mark delivered yet'}
+                    </p>
+                  )}
+                </div>
+                {/* Only COD gets a manual collect button — online_on_delivery is paid by buyer */}
+                {needsPaymentCollection && paymentMethod === 'cod' && (
+                  <Button
+                    size="sm"
+                    className="text-xs bg-green-500 hover:bg-green-600 text-white h-7 px-3"
+                    disabled={isUpdating}
+                    onClick={() => markPaymentCollected(order.id)}
+                  >
+                    Mark Collected
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
+        )}
+
+        {/* Delivery address */}
+        {(order as any).delivery_address && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 space-y-1">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1">
+              📍 Deliver to
+            </p>
+            <p className="text-sm font-semibold text-gray-800">
+              {(order as any).delivery_name}
+              {(order as any).delivery_phone && (
+                <span className="font-normal text-muted-foreground"> · {(order as any).delivery_phone}</span>
+              )}
+            </p>
+            <p className="text-sm text-gray-700">
+              {[(order as any).delivery_flat, (order as any).delivery_floor ? `${(order as any).delivery_floor} floor` : null, (order as any).delivery_apartment, (order as any).delivery_address].filter(Boolean).join(', ')}
+            </p>
+            {(order as any).delivery_landmark && (
+              <p className="text-xs text-muted-foreground">Near: {(order as any).delivery_landmark}</p>
+            )}
+          </div>
+        )}
 
         {/* Delivery time banner for pre-orders */}
         {isPreorder && deliveryTime && (
@@ -279,16 +420,16 @@ export default function SellerOrdersPage() {
         </div>
 
         {/* Default ETA preview when about to accept */}
-        {order.status === 'created' && defaultEta && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-orange-50 rounded-lg px-2.5 py-1.5">
-            <Clock className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
-            <span>Will notify buyer: delivery in <span className="font-semibold text-orange-600">{defaultEta} min</span></span>
+        {(order.status === 'payment_confirmed' || order.status === 'created') && defaultEta && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-emerald-50 rounded-lg px-2.5 py-1.5">
+            <Clock className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+            <span>Will notify buyer: delivery in <span className="font-semibold text-emerald-800">{defaultEta} min</span></span>
           </div>
         )}
 
         {/* ETA confirmed when accepted */}
         {order.status === 'accepted' && order.eta_minutes && (
-          <div className="flex items-center gap-2 text-xs text-orange-600 font-medium">
+          <div className="flex items-center gap-2 text-xs text-emerald-800 font-medium">
             <Clock className="w-3.5 h-3.5" />
             <span>ETA: {order.eta_minutes} min from order time</span>
           </div>
@@ -338,7 +479,7 @@ export default function SellerOrdersPage() {
                     {isUpdating ? '…' : action.label}
                   </Button>
                 ))}
-                {order.status === 'created' && (
+                {(order.status === 'payment_confirmed' || order.status === 'created') && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -358,7 +499,7 @@ export default function SellerOrdersPage() {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 pb-24 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">Orders</h1>
         <button
@@ -371,17 +512,17 @@ export default function SellerOrdersPage() {
 
       {/* ETA banner */}
       <Link href="/seller/account">
-        <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl px-3 py-2">
+        <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-orange-500" />
-            <span className="text-sm text-orange-700">
+            <Clock className="w-4 h-4 text-emerald-700" />
+            <span className="text-sm text-emerald-800">
               Default ETA:{' '}
               <span className="font-bold">
                 {defaultEta ? `${defaultEta} min` : 'Not set'}
               </span>
             </span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-orange-500">
+          <div className="flex items-center gap-1 text-xs text-emerald-700">
             <Settings className="w-3.5 h-3.5" />
             Edit
           </div>
@@ -392,11 +533,11 @@ export default function SellerOrdersPage() {
       <div className="flex gap-2 bg-gray-100 rounded-xl p-1">
         <button
           onClick={() => setTab('active')}
-          className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'active' ? 'bg-white text-orange-600 shadow-sm' : 'text-muted-foreground'}`}
+          className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${tab === 'active' ? 'bg-white text-emerald-800 shadow-sm' : 'text-muted-foreground'}`}
         >
           Active
           {orders.filter(o => ACTIVE_STATUSES.includes(o.status)).length > 0 && (
-            <span className="ml-1.5 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5">
+            <span className="ml-1.5 bg-emerald-700 text-white text-xs rounded-full px-1.5 py-0.5">
               {orders.filter(o => ACTIVE_STATUSES.includes(o.status)).length}
             </span>
           )}
@@ -421,7 +562,7 @@ export default function SellerOrdersPage() {
         {/* Spot Orders */}
         {spotOrders.length > 0 && (
           <div className="space-y-3">
-            <SectionDivider label={`🔴 Spot Orders (${spotOrders.length})`} colorClass="text-orange-700" />
+            <SectionDivider label={`🔴 Spot Orders (${spotOrders.length})`} colorClass="text-emerald-800" />
             {spotOrders.map(renderOrder)}
           </div>
         )}

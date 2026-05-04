@@ -1,0 +1,16 @@
+{
+  "name": "Nook — Food from your society",
+  "short_name": "Nook",
+  "description": "Food from your nook — homemade meals from kitchens in your society",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f4",
+  "theme_color": "#047857",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ],
+  "categories": ["food", "shopping"],
+  "screenshots": []
+}

@@ -82,8 +82,8 @@ export default function AccountPage() {
       {/* Profile */}
       <div className="bg-white rounded-2xl border p-4 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-            <User className="w-6 h-6 text-orange-500" />
+          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+            <User className="w-6 h-6 text-emerald-700" />
           </div>
           <div>
             <p className="font-semibold text-sm">{name || 'Your Name'}</p>
@@ -116,7 +116,7 @@ export default function AccountPage() {
         </div>
 
         <Button
-          className="w-full bg-orange-500 hover:bg-orange-600"
+          className="w-full bg-emerald-700 hover:bg-emerald-800"
           onClick={saveProfile}
           disabled={saving}
         >
@@ -129,7 +129,7 @@ export default function AccountPage() {
         <p className="text-sm font-semibold mb-1">Are you a seller?</p>
         <p className="text-xs text-muted-foreground mb-3">Manage your kitchen and orders from the seller dashboard.</p>
         <Link href="/seller/listings">
-          <Button variant="outline" className="w-full border-orange-300 text-orange-600 hover:bg-orange-50">
+          <Button variant="outline" className="w-full border-emerald-300 text-emerald-800 hover:bg-emerald-50">
             <ChefHat className="w-4 h-4 mr-2" />
             Go to Seller Dashboard
           </Button>

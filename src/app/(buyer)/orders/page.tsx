@@ -10,6 +10,7 @@ import { orderColor, orderRef } from '@/lib/order-color'
 import { ShoppingBag, ChevronRight, Clock, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { OrderTypePill } from '@/components/OrderTypePill'
 import Link from 'next/link'
 
 const STATUS_BADGE: Record<OrderStatus, { label: string; className: string }> = {
@@ -17,7 +18,7 @@ const STATUS_BADGE: Record<OrderStatus, { label: string; className: string }> = 
   accepted:          { label: 'Accepted',           className: 'bg-blue-100 text-blue-800' },
   waiting_payment:   { label: 'Awaiting Payment',   className: 'bg-purple-100 text-purple-800' },
   payment_confirmed: { label: 'Payment Confirmed',  className: 'bg-indigo-100 text-indigo-800' },
-  dispatched:        { label: 'On the way',         className: 'bg-orange-100 text-orange-800' },
+  dispatched:        { label: 'On the way',         className: 'bg-emerald-100 text-emerald-900' },
   delivered:         { label: 'Delivered',          className: 'bg-green-100 text-green-800' },
   rejected:          { label: 'Rejected',           className: 'bg-red-100 text-red-800' },
   cancelled:         { label: 'Cancelled',          className: 'bg-gray-100 text-gray-600' },
@@ -90,7 +91,7 @@ export default function OrdersPage() {
       <p className="font-medium">No orders yet</p>
       <p className="text-sm mt-1">Your orders will appear here</p>
       <Link href="/">
-        <Button className="mt-4 bg-orange-500 hover:bg-orange-600">Browse Kitchens</Button>
+        <Button className="mt-4 bg-emerald-700 hover:bg-emerald-800">Browse Kitchens</Button>
       </Link>
     </div>
   )
@@ -104,7 +105,7 @@ export default function OrdersPage() {
 
       {active.length > 0 && (
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-orange-700 mb-2">Active</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 mb-2">Active</p>
           <div className="space-y-3">
             {active.map(order => <OrderCard key={order.id} order={order} />)}
           </div>
@@ -163,7 +164,7 @@ function OrderCard({ order }: { order: OrderWithStore }) {
                     style={{ backgroundColor: color.bg, color: color.text }}>
                 {orderRef(order.id)}
               </span>
-              <span className="text-xs text-muted-foreground capitalize">{order.order_type}</span>
+              <OrderTypePill type={order.order_type} />
               <span className="text-xs text-muted-foreground">
                 {new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}
                 {', '}
@@ -177,9 +178,9 @@ function OrderCard({ order }: { order: OrderWithStore }) {
               </p>
             )}
             {showEta && (
-              <div className="mt-2 bg-orange-50 border border-orange-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
-                <p className="text-xs text-orange-700 font-medium">
+              <div className="mt-2 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-emerald-700 flex-shrink-0" />
+                <p className="text-xs text-emerald-800 font-medium">
                   Expect order in <span className="font-bold">{order.eta_minutes} min</span>
                   {' · '}by <span className="font-bold">{expectedByTime(order.created_at, order.eta_minutes!)}</span>
                 </p>
@@ -221,7 +222,7 @@ function OrderCard({ order }: { order: OrderWithStore }) {
         {/* Total */}
         <div className="flex justify-between items-center">
           <span className="text-xs text-muted-foreground">Total</span>
-          <span className="text-sm font-bold text-orange-600">₹{order.total.toFixed(2)}</span>
+          <span className="text-sm font-bold text-emerald-800">₹{order.total.toFixed(2)}</span>
         </div>
       </div>
     </Link>
